@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Verify & Set Password";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - FinGuard</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+            body {
+                background-color: #f8fafc;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+            }
+
+            .auth-card {
+                background: #ffffff;
+                border-radius: 24px;
+                box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+                padding: 3rem;
+                width: 100%;
+                max-width: 450px;
+            }
+
+            .modern-input {
+                border-radius: 12px;
+                border: 2px solid #e2e8f0;
+                padding: 0.8rem 1.2rem;
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .btn-submit {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border-radius: 12px;
+                padding: 1rem;
+                width: 100%;
+                font-weight: bold;
+                border: none;
+            }
+    </style>
+</head>
+
+<body>
+    <div class="auth-card">
+        <h3 class="text-center fw-bold mb-1">Set Password</h3>
+        <p class="text-muted text-center mb-4">Enter the OTP sent to <strong>@ViewBag.Email</strong></p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger text-center rounded-3">@ViewBag.Error</div>
+        }
+        @if (ViewBag.Success != null)
+        {
+            <div class="alert alert-success text-center rounded-3">@ViewBag.Success</div>
+        }
+
+        <form asp-action="SetNewPassword" method="post">
+            <input type="hidden" name="email" value="@ViewBag.Email" />
+
+            <input type="text" name="otp" class="modern-input" placeholder="Enter 6-digit OTP" required maxlength="6" />
+            <input type="password" name="newPassword" class="modern-input mb-3"
+                   placeholder="New Password (Min. 8 chars)" required minlength="8" />
+
+            <button type="submit" class="btn-submit mt-2">Verify & Save Password</button>
+        </form>
+    </div>
+</body>
+
+</html>

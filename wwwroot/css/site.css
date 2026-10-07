@@ -1,0 +1,165 @@
+/* Modern Fintech UI */
+:root {
+  /* Light Mode Variables */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-primary: #4f46e5;
+  --accent-secondary: #6366f1;
+  --gradient-btn: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  --danger-color: #ef4444;
+  --success-color: #10b981;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Variables */
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-primary: #6366f1;
+    --accent-secondary: #818cf8;
+    --gradient-btn: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  background-image: 
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.1), transparent 40%);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism Card */
+.fg-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.fg-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Gradient Buttons */
+.fg-btn-primary {
+  background: var(--gradient-btn);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+.fg-btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+
+/* Navigation */
+.fg-navbar {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+.fg-brand {
+  font-weight: 800;
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-decoration: none;
+}
+
+.fg-nav-link {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+.fg-nav-link:hover {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Footer */
+.fg-footer {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-border);
+  padding: 1.5rem 0;
+  margin-top: auto;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Dropdown Menu Contrast Fixes */
+.dropdown-menu.fg-card {
+  background: var(--text-primary);
+}
+
+.dropdown-menu .dropdown-item {
+  color: var(--bg-primary);
+  transition: all 0.2s ease;
+}
+
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+  background-color: var(--bg-primary);
+  color: var(--text-primary) !important;
+}
+
+.dropdown-menu .dropdown-item.text-danger {
+  color: var(--danger-color) !important;
+}
+
+.dropdown-menu .dropdown-item.text-danger:hover,
+.dropdown-menu .dropdown-item.text-danger:focus {
+  background-color: var(--danger-color);
+  color: #fff !important;
+}
+
+.dropdown-divider {
+  border-top-color: var(--bg-primary);
+  opacity: 0.2;
+}

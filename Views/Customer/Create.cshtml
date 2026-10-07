@@ -1,0 +1,229 @@
+@model FinGuard.Models.Customer
+
+@{
+    ViewData["Title"] = "Onboard Customer";
+    string maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2.5rem;
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    .header-title {
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 0.85rem 2rem;
+        font-weight: 600;
+        border: none;
+        box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.3);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 20px -4px rgba(99, 102, 241, 0.5);
+        color: white;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        background-color: #ffffff;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .back-link {
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 1.5rem;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: #0f172a;
+    }
+</style>
+
+<div class="fg-card mt-4" style="max-width: 800px; margin: 0 auto;">
+    <div class="page-header">
+        <h2 class="header-title mb-2">Onboard New Customer</h2>
+        <p class="text-light opacity-75">Enter borrower details for credit evaluation.</p>
+    </div>
+
+    @if (ViewBag.InfoMessage != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-4" style="border-radius: 12px; font-weight: 600;">
+            <span class="me-2">⚠️</span> @ViewBag.InfoMessage
+        </div>
+    }
+
+    <form asp-action="Create">
+        <div class="row g-4">
+            <div class="col-md-12">
+                <label asp-for="CustomerId" class="form-label text-light">Assign Customer ID</label>
+                <input asp-for="CustomerId" type="number" min="1" class="form-control" placeholder="e.g. 101"
+                       required />
+                <span asp-validation-for="CustomerId" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Name" class="form-label text-light">Full Name</label>
+                <input asp-for="Name" class="form-control" placeholder="Enter full name"
+                       oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '').replace(/^\s+/g, '').replace(/\s{2,}/g, ' ');"
+                       required />
+                <small class="text-muted d-block mt-1">Must match official document exactly.</small>
+                <span asp-validation-for="Name" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="DateOfBirth" class="form-label text-light">Date of Birth</label>
+                <input asp-for="DateOfBirth" type="date" max="@maxDate" class="form-control" required />
+                <small class="text-muted d-block mt-1">Must match official document exactly.</small>
+                <span asp-validation-for="DateOfBirth" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="CountryCode" class="form-label text-light">Country Code</label>
+                <input asp-for="CountryCode" class="form-control" value="+91" placeholder="+91" required />
+                <span asp-validation-for="CountryCode" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Phone" class="form-label text-light">Phone Number</label>
+                <input asp-for="Phone" class="form-control" placeholder="Enter 10-digit phone number"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" required />
+                <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label text-light">Email Address</label>
+                <div class="input-group">
+                    <input asp-for="Email" type="email" class="form-control" placeholder="Enter your e-mail" required id="emailInput" />
+                    <button type="button" class="btn btn-outline-primary bg-light" id="btnSendOtp">Send OTP</button>
+                </div>
+                <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6" id="otpSection" style="display:none;">
+                <label class="form-label text-light">Enter OTP</label>
+                <div class="input-group">
+                    <input type="text" id="otpInput" class="form-control" placeholder="6-digit OTP" />
+                    <button type="button" class="btn btn-outline-success bg-light" id="btnVerifyOtp">Verify</button>
+                </div>
+                <span id="otpMessage" class="small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="MonthlyIncome" class="form-label text-light">Monthly Income (₹)</label>
+                <input asp-for="MonthlyIncome" type="number" step="0.01" min="1" class="form-control"
+                       placeholder="Enter monthly income" required />
+                <span asp-validation-for="MonthlyIncome" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Address" class="form-label text-light">Residential Address</label>
+                <textarea asp-for="Address" class="form-control" rows="2" placeholder="House No, Street, City"
+                          required></textarea>
+                <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="PinCode" class="form-label text-light">PIN Code</label>
+                <input asp-for="PinCode" class="form-control" placeholder="Enter 6-digit PIN code"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" required />
+                <small class="text-muted d-block mt-1">Must match official document exactly.</small>
+                <span asp-validation-for="PinCode" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-12 mt-4 text-center">
+                <button type="submit" class="btn-submit" id="btnSubmitApp" disabled>Submit Application</button>
+                <a asp-action="Index" class="back-link">← Back to Directory</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('btnSendOtp').addEventListener('click', function () {
+            var email = document.getElementById('emailInput').value;
+            if (!email) {
+                alert('Please enter an email address first.');
+                return;
+            }
+
+            fetch('/Customer/GenerateEmailOtp?email=' + encodeURIComponent(email), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('otpSection').style.display = 'block';
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        });
+
+        document.getElementById('btnVerifyOtp').addEventListener('click', function () {
+            var email = document.getElementById('emailInput').value;
+            var otp = document.getElementById('otpInput').value;
+
+            if (!otp) {
+                alert('Please enter the OTP.');
+                return;
+            }
+
+            fetch('/Customer/VerifyEmailOtp?email=' + encodeURIComponent(email) + '&otp=' + encodeURIComponent(otp), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                var msg = document.getElementById('otpMessage');
+                if (data.success) {
+                    msg.textContent = data.message;
+                    msg.className = 'text-success small mt-1 d-block';
+                    document.getElementById('btnSubmitApp').disabled = false;
+                    document.getElementById('emailInput').readOnly = true;
+                    document.getElementById('btnSendOtp').disabled = true;
+                } else {
+                    msg.textContent = data.message;
+                    msg.className = 'text-danger small mt-1 d-block';
+                }
+            })
+            .catch(err => console.error(err));
+        });
+    </script>
+}

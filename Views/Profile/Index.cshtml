@@ -1,0 +1,149 @@
+@model FinGuard.Models.AdminUser
+@{
+    ViewData["Title"] = "My Profile";
+    string maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
+}
+
+<style>
+    .bg-dark-card {
+        background: #111827;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .dark-input {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border: 1px solid #334155 !important;
+        transition: all 0.2s ease;
+    }
+
+    .dark-input:focus:not([readonly]) {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+        outline: none;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="bg-dark-card rounded-4 p-4 p-md-5 mt-3">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold text-white mb-0">My Profile</h4>
+                <button type="button" id="btnEdit" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold"
+                        style="transition: all 0.3s ease;">
+                    Edit Profile
+                </button>
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div id="profileAlertBox" class="alert alert-success rounded-3 fw-semibold"
+                     style="transition: opacity 0.5s ease;">
+                    ✅ @TempData["Success"]
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div id="profileAlertBox" class="alert alert-info rounded-3 fw-semibold text-primary"
+                     style="background-color: #e0f2fe; border: 1px solid #bae6fd; transition: opacity 0.5s ease;">
+                    ℹ️ @TempData["Info"]
+                </div>
+            }
+
+            <script>
+                            setTimeout(function () {
+                                var alertBox = document.getElementById('profileAlertBox');
+                                if (alertBox) {
+                                    alertBox.style.opacity = '0';
+                                    setTimeout(function () {
+                                        alertBox.style.display = 'none';
+                                    }, 500);
+                                }
+                            }, 3000);
+            </script>
+
+            <form asp-action="UpdateProfile" method="post" id="profileForm">
+                @Html.AntiForgeryToken()
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Username</label>
+                        <input type="text" class="form-control dark-input rounded-3 py-2 px-3"
+                               value="@Model.Username" readonly />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Registered Email</label>
+                        <input type="email" class="form-control dark-input rounded-3 py-2 px-3"
+                               value="@Model.Email" readonly />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Admin Role</label>
+                        <input type="text" class="form-control dark-input rounded-3 py-2 px-3"
+                               value="@Model.Role" readonly />
+                    </div>
+
+                    <div class="col-12 mt-4 pt-3 border-top border-secondary opacity-75">
+                        <h6 class="fw-bold text-white mb-3">Personal Information</h6>
+                    </div>
+
+                    <div class="col-md-6 mt-2">
+                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Full Name</label>
+                        <input type="text" id="fullNameInput" name="fullName"
+                               class="form-control dark-input rounded-3 py-2 px-3" value="@Model.FullName"
+                               placeholder="Enter full name" readonly
+                               oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '').replace(/^\s+/g, '').replace(/\s{2,}/g, ' ');"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mt-2">
+                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Date of Birth</label>
+                        <input type="date" id="dobInput" name="dateOfBirth"
+                               class="form-control dark-input rounded-3 py-2 px-3"
+                               value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" max="@maxDate" readonly required />
+                    </div>
+                </div>
+
+                <div class="mt-5 text-end" id="saveActions" style="display: none;">
+                    <button type="button" id="btnCancel"
+                            class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold me-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"
+                            style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border:none;">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('btnEdit').addEventListener('click', function () {
+        var nameInput = document.getElementById('fullNameInput');
+        nameInput.removeAttribute('readonly');
+        
+        var dobInput = document.getElementById('dobInput');
+        dobInput.removeAttribute('readonly');
+        
+        this.style.display = 'none';
+        document.getElementById('saveActions').style.display = 'block';
+    });
+
+    document.getElementById('btnCancel').addEventListener('click', function () {
+        var nameInput = document.getElementById('fullNameInput');
+        nameInput.setAttribute('readonly', 'readonly');
+        
+        var dobInput = document.getElementById('dobInput');
+        dobInput.setAttribute('readonly', 'readonly');
+        
+        document.getElementById('saveActions').style.display = 'none';
+        document.getElementById('btnEdit').style.display = 'inline-block';
+        
+        document.getElementById('profileForm').reset();
+    });
+</script>

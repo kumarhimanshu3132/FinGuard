@@ -1,0 +1,66 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Admin Setup";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FinGuard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="min-vh-100 d-flex align-items-center justify-content-center w-100 px-3">
+        <div class="card border-0 shadow-lg" style="max-width: 900px; width: 100%; border-radius: 1rem; overflow: hidden;">
+            <div class="row g-0">
+                <!-- Left Panel (Flip Banner) -->
+                <div class="col-md-5 d-none d-md-flex flex-column justify-content-center align-items-center text-center p-5 bg-primary text-white" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
+                    <h2 class="fw-bold mb-3">Welcome Back!</h2>
+                    <p class="mb-4">Already have an account? Sign in to access your dashboard.</p>
+                    <a asp-controller="Auth" asp-action="Login" class="btn btn-outline-light rounded-pill px-4 fw-bold">Secure Login</a>
+                </div>
+
+                <!-- Right Panel (Registration Form) -->
+                <div class="col-md-7 bg-dark text-light p-5" style="background: #111827 !important;">
+                    <div class="px-2">
+                        <h3 class="fw-bold mb-4">Register</h3>
+                        
+                        @if (ViewBag.Error != null)
+                        {
+                            <div class="alert alert-danger p-2 small mb-3 text-center border-0 rounded-3" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; font-weight: 600;">@ViewBag.Error</div>
+                        }
+
+                        <form asp-action="Register" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-3">
+                                <label class="form-label text-white fw-semibold small">Full Name</label>
+                                <input type="text" name="FullName" class="form-control bg-transparent text-white border-secondary" style="background-color: rgba(15, 23, 42, 0.6) !important;" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-white fw-semibold small">Email address</label>
+                                <input type="email" name="Email" class="form-control bg-transparent text-white border-secondary" style="background-color: rgba(15, 23, 42, 0.6) !important;" required />
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label text-white fw-semibold small">Password</label>
+                                <input type="password" name="Password" class="form-control bg-transparent text-white border-secondary" style="background-color: rgba(15, 23, 42, 0.6) !important;" required />
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border: none; padding: 12px; letter-spacing: 0.5px;">Create Account</button>
+                        </form>
+                        
+                        <!-- Mobile fallback link -->
+                        <div class="mt-4 text-center d-md-none">
+                            <a asp-controller="Auth" asp-action="Login" class="text-decoration-none fw-semibold" style="color: #64748b; font-size: 0.9rem;">Already have an account? Sign in</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

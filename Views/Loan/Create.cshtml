@@ -1,0 +1,93 @@
+@model FinGuard.Models.Loan
+@{
+    ViewData["Title"] = "Issue Loan";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="fg-card p-4">
+            <h4 class="fw-bold mb-4" style="color: var(--text-primary);">Issue New Loan</h4>
+
+            <form asp-action="Create" method="post">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="LoanId" class="form-label fw-bold" style="color: var(--text-secondary);">Manual Loan ID</label>
+                        <input asp-for="LoanId" class="form-control" placeholder="Enter Loan ID" required />
+                        <span asp-validation-for="LoanId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CustomerId" class="form-label fw-bold" style="color: var(--text-secondary);">Select Customer</label>
+                        <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.Customers" required>
+                            <option value="">-- Select Customer --</option>
+                        </select>
+                        <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="PrincipalAmount" class="form-label fw-bold" style="color: var(--text-secondary);">Principal Amount (₹)</label>
+                        <input asp-for="PrincipalAmount" id="PrincipalAmount" class="form-control calc-input"
+                               placeholder="Amount (₹)" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="InterestRate" class="form-label fw-bold" style="color: var(--text-secondary);">Interest Rate (% Yearly)</label>
+                        <input asp-for="InterestRate" id="InterestRate" class="form-control calc-input" placeholder="Interest Rate (%)"
+                               required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="TenureMonths" class="form-label fw-bold" style="color: var(--text-secondary);">Tenure (Months)</label>
+                        <input asp-for="TenureMonths" id="TenureMonths" class="form-control calc-input" placeholder="Tenure (Months)"
+                               required />
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded-3" style="background-color: var(--bg-primary); border: 1px dashed var(--border-color);">
+                    <h6 class="fw-bold mb-2" style="color: var(--accent-primary);">Live EMI Preview</h6>
+                    <div class="d-flex justify-content-between">
+                        <span style="color: var(--text-secondary);">Estimated Monthly EMI:</span>
+                        <strong id="previewEmi" class="fs-5 text-success">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span style="color: var(--text-secondary);">Total Payable Amount:</span>
+                        <strong id="previewTotal" style="color: var(--text-primary);">₹0.00</strong>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button type="submit" class="fg-btn-primary">Issue Loan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <script>
+        document.querySelectorAll('.calc-input').forEach(item => {
+            item.addEventListener('input', function () {
+                let p = parseFloat(document.getElementById('PrincipalAmount').value) || 0;
+                let rateYearly = parseFloat(document.getElementById('InterestRate').value) || 0;
+                let n = Math.abs(parseInt(document.getElementById('TenureMonths').value)) || 0;
+
+                let r = (rateYearly / 12) / 100;
+                let emi = 0;
+
+                if (r > 0 && n > 0) {
+                    emi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                } else if (n > 0) {
+                    emi = p / n;
+                }
+
+                document.getElementById('previewEmi').innerText = '₹' + emi.toFixed(2);
+                document.getElementById('previewTotal').innerText = '₹' + (emi * n).toFixed(2);
+            });
+        });
+    </script>
+
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+    }

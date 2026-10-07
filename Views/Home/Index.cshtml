@@ -1,0 +1,154 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .dashboard-wrapper {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding-bottom: 3rem;
+    }
+
+    .hero-card {
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 28px;
+        padding: 3.5rem;
+        color: white;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.5);
+        position: relative;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -20%;
+        width: 150%;
+        height: 150%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .badge-premium {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 0.5rem 1.2rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        backdrop-filter: blur(12px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .balance-amount {
+        font-size: 4.5rem;
+        font-weight: 800;
+        letter-spacing: -2px;
+        margin: 1rem 0;
+        background: linear-gradient(to right, #ffffff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.1;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: -3rem;
+        padding: 0 2rem;
+        position: relative;
+        z-index: 10;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.8rem;
+        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.07);
+        border: 1px solid #f1f5f9;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.12);
+    }
+
+    .icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .bg-green-light {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .bg-blue-light {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .bg-purple-light {
+        background: #f3e8ff;
+        color: #9333ea;
+    }
+</style>
+
+<div class="container dashboard-wrapper">
+    <div class="hero-card">
+        <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+            <div class="badge-premium">
+                <span>✦</span> FinGuard Dashboard
+            </div>
+            <div class="text-start text-md-end">
+                <p class="text-white-50 mb-0 fw-semibold fs-6">System Status</p>
+                <p class="mb-0 fw-bold text-success">● Micro-Finance System Ready</p>
+            </div>
+        </div>
+
+        <div class="row align-items-center mt-4">
+            <div class="col-lg-7">
+                <p class="text-white-50 mb-1 fw-semibold fs-5 text-uppercase letter-spacing">Total Disbursed Loans</p>
+                <!-- DYNAMIC DATA BINDING HERE -->
+                <h1 class="balance-amount">₹@ViewBag.TotalDisbursed.ToString("N2")</h1>
+                <p class="text-white-50 fs-6 mb-0 mt-3" style="max-width: 90%; line-height: 1.6;">
+                    Manage your Self-Help Groups, track EMI collections, and monitor field agent operations from this
+                    master dashboard.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="icon-wrapper bg-blue-light">👥</div>
+            <p class="text-muted fw-semibold mb-1 fs-6">Active Customers</p>
+            <!-- DYNAMIC DATA BINDING HERE -->
+            <h4 class="fw-bold mb-0 text-dark">@ViewBag.ActiveCustomers</h4>
+        </div>
+        <div class="stat-card">
+            <div class="icon-wrapper bg-green-light">💰</div>
+            <p class="text-muted fw-semibold mb-1 fs-6">Total Recovered</p>
+            <!-- DYNAMIC DATA BINDING HERE -->
+            <h4 class="fw-bold mb-0 text-dark">₹@ViewBag.TotalRecovered.ToString("N2")</h4>
+        </div>
+        <div class="stat-card">
+            <div class="icon-wrapper bg-purple-light">⚠️</div>
+            <p class="text-muted fw-semibold mb-1 fs-6">Defaulters</p>
+            <!-- DYNAMIC DATA BINDING HERE -->
+            <h4 class="fw-bold mb-0 text-dark">@ViewBag.Defaulters</h4>
+        </div>
+    </div>
+</div>
