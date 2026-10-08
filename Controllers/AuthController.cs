@@ -80,23 +80,35 @@ namespace FinGuard.Controllers
                 return View();
             }
 
-            if (await _context.AdminUsers.AnyAsync(u => u.Email == Email))
+            var existingUser = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == Email);
+
+            if (existingUser != null)
             {
-                ViewBag.Error = "Email already registered.";
-                return View();
+                if (!string.IsNullOrEmpty(existingUser.Password))
+                {
+                    ViewBag.Error = "Email already registered.";
+                    return View();
+                }
+
+                existingUser.FullName = FullName;
+                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(Password);
+                existingUser.IsVerified = true;
+            }
+            else
+            {
+                var newUser = new AdminUser
+                {
+                    FullName = FullName,
+                    Username = Email, // Fallback since Username is required
+                    Email = Email,
+                    Password = BCrypt.Net.BCrypt.HashPassword(Password),
+                    Role = "Admin",
+                    IsVerified = true
+                };
+
+                _context.AdminUsers.Add(newUser);
             }
 
-            var newUser = new AdminUser
-            {
-                FullName = FullName,
-                Username = Email, // Fallback since Username is required
-                Email = Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(Password),
-                Role = "Admin",
-                IsVerified = true
-            };
-
-            _context.AdminUsers.Add(newUser);
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Admin account successfully created! You can now log in.";
