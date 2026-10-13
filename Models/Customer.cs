@@ -73,6 +73,8 @@ namespace FinGuard.Models
         public string KycStatus { get; set; } = "Pending";
 
         public virtual ICollection<Loan>? Loans { get; set; }
+        public virtual ICollection<BankAccount>? BankAccounts { get; set; }
+        public virtual ICollection<LoanDisbursement>? LoanDisbursements { get; set; }
 
         public bool IsEligibleForLoan 
         { 

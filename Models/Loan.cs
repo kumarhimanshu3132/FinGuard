@@ -26,5 +26,9 @@ namespace FinGuard.Models
         public DateTime NextDueDate { get; set; }
 
         public string Status { get; set; } = "Pending";
+
+        public string DisbursementStatus { get; set; } = "Undisbursed";
+
+        public virtual ICollection<LoanDisbursement>? Disbursements { get; set; }
     }
 }

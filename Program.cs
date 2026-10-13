@@ -14,14 +14,36 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Email Service
 builder.Services.AddTransient<FinGuard.Services.EmailService>();
 
-// Add Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Auth/Login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(2);
-        options.SlidingExpiration = true;
-    });
+// Add Banking & Simulated Disbursement Services
+builder.Services.AddScoped<FinGuard.Services.IBankAccountService, FinGuard.Services.BankAccountService>();
+builder.Services.AddScoped<FinGuard.Services.ISimulatedDisbursementService, FinGuard.Services.SimulatedDisbursementService>();
+
+// Configure Razorpay Test Mode Settings & Service
+builder.Services.Configure<FinGuard.Models.RazorpaySettings>(
+    builder.Configuration.GetSection(FinGuard.Models.RazorpaySettings.SectionName));
+builder.Services.AddScoped<FinGuard.Services.IRazorpayPaymentService, FinGuard.Services.RazorpayPaymentService>();
+
+// Add Dual-Scheme Cookie Authentication (Admin + Borrower Portal Isolation)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.LoginPath = "/Auth/Login";
+    options.AccessDeniedPath = "/Auth/Login";
+    options.Cookie.Name = "FinGuard.Admin.Session";
+    options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    options.SlidingExpiration = true;
+})
+.AddCookie("BorrowerAuth", options =>
+{
+    options.LoginPath = "/BorrowerAuth/Login";
+    options.AccessDeniedPath = "/Portal/AccessDenied";
+    options.Cookie.Name = "FinGuard.Borrower.Session";
+    options.ExpireTimeSpan = TimeSpan.FromHours(4);
+    options.SlidingExpiration = true;
+});
 
 var app = builder.Build();
 
@@ -30,9 +52,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();

@@ -1,0 +1,114 @@
+@model FinGuard.Models.Repayment
+
+@{
+    ViewData["Title"] = $"Payment Receipt #REC-{Model.RepaymentId}";
+    Layout = "_BorrowerLayout";
+    var customer = ViewBag.Customer as FinGuard.Models.Customer;
+    var loan = ViewBag.Loan as FinGuard.Models.Loan;
+}
+
+<div class="no-print mb-4 d-flex justify-content-between align-items-center">
+    <a asp-action="Repayments" class="bp-btn bp-btn-secondary bp-btn-sm">
+        <i class="fa-solid fa-arrow-left me-1"></i> Back to Repayment History
+    </a>
+    <button type="button" class="bp-btn bp-btn-primary bp-btn-sm" onclick="window.print();">
+        <i class="fa-solid fa-print me-1"></i> Print / Save Receipt
+    </button>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="bp-card p-4 p-md-5 bg-white border shadow-sm">
+            <!-- Receipt Header -->
+            <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="bp-brand-icon" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h1 class="fs-5 fw-bold text-dark mb-0">FinGuard Microfinance</h1>
+                    </div>
+                    <div class="text-secondary small">Self-Help Group Credit Operations • Institutional Lending Ledger</div>
+                </div>
+                <div class="text-end">
+                    @if (Model.IsTestMode)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 fw-bold d-block mb-1">
+                            <i class="fa-solid fa-flask me-1"></i> RAZORPAY TEST MODE
+                        </span>
+                    }
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 fw-bold">
+                        VERIFIED TRANSACTION
+                    </span>
+                    <div class="text-muted small mt-1">Receipt #REC-@Model.RepaymentId</div>
+                </div>
+            </div>
+
+            <!-- Receipt Meta -->
+            <div class="row g-3 mb-4 small">
+                <div class="col-sm-6">
+                    <span class="text-secondary">Borrower Legal Name:</span>
+                    <strong class="text-dark d-block">@(customer?.Name ?? "Verified Customer")</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-secondary">Customer Portfolio ID:</span>
+                    <strong class="text-dark d-block">#@(customer?.CustomerId ?? 0)</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-secondary">Loan Account Facility:</span>
+                    <strong class="text-dark d-block">#@(loan?.LoanId ?? Model.LoanId)</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-secondary">Transaction Timestamp:</span>
+                    <strong class="text-dark d-block">@Model.PaymentDate.ToString("dd MMMM yyyy, hh:mm tt") UTC</strong>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.RazorpayPaymentId))
+                {
+                    <div class="col-sm-6">
+                        <span class="text-secondary">Razorpay Payment ID:</span>
+                        <strong class="text-dark font-monospace d-block">@Model.RazorpayPaymentId</strong>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.RazorpayOrderId))
+                {
+                    <div class="col-sm-6">
+                        <span class="text-secondary">Razorpay Order ID:</span>
+                        <strong class="text-dark font-monospace d-block">@Model.RazorpayOrderId</strong>
+                    </div>
+                }
+            </div>
+
+            <!-- Receipt Amount Box -->
+            <div class="p-4 bg-light rounded-3 border text-center mb-4">
+                <div class="text-secondary small fw-medium text-uppercase letter-spacing mb-1">Installment Amount Paid</div>
+                <div class="display-6 fw-bold text-success num-tabular">₹@Model.AmountPaid.ToString("N2")</div>
+                <div class="text-muted small mt-1">Credited against Loan Account #@Model.LoanId</div>
+            </div>
+
+            <!-- Officer & Verification Footer -->
+            <div class="row g-3 pt-3 border-top small text-secondary">
+                <div class="col-sm-6">
+                    <div><strong>Collection Channel:</strong> @Model.CollectedBy</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                        @(string.IsNullOrEmpty(Model.PaymentMethod) ? "Standard Ledger Recovery" : $"Channel: {Model.PaymentMethod}")
+                    </div>
+                </div>
+                <div class="col-sm-6 text-sm-end">
+                    <div><strong>Audit Signature:</strong> SYSTEM-LEDGER-VERIFIED</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Ref: FG-REC-@Model.RepaymentId-LN-@Model.LoanId</div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-top text-center text-muted" style="font-size: 0.75rem;">
+                @if (Model.IsTestMode)
+                {
+                    <span class="text-warning-emphasis fw-bold d-block mb-1">
+                        * Demo Sandbox Receipt: Generated in Razorpay Test Mode. No real currency transferred.
+                    </span>
+                }
+                This document serves as an authentic institutional receipt of installment payment issued by FinGuard Microfinance Management System.
+            </div>
+        </div>
+    </div>
+</div>

@@ -24,44 +24,117 @@ namespace FinGuard.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            if (User.Identity!.IsAuthenticated) return RedirectToAction("Index", "Home");
-
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
+        public async Task<IActionResult> Login(string email, string password, bool rememberMe = false, string? returnUrl = null)
         {
-            var user = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email);
+            ViewData["ReturnUrl"] = returnUrl;
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            {
+                ViewBag.Error = "Please enter both your email address and password.";
+                return View();
+            }
+
+            string normalizedEmail = email.Trim().ToLowerInvariant();
+            var user = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
             if (user == null)
             {
-                ViewBag.Error = "Security Alert: Unregistered Email Address.";
+                var custCheck = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalizedEmail);
+                if (custCheck != null)
+                {
+                    ViewBag.Error = "Your borrower profile exists, but you have not configured an online password yet. Please create an account or verify your credentials.";
+                    return View();
+                }
+
+                ViewBag.Error = "No registered account found with this email. Please check your credentials or register a borrower account.";
                 return View();
             }
 
-            if (user.Password == null)
+            if (string.IsNullOrEmpty(user.Password))
             {
-                ViewBag.Error = "First time user? Please click on 'Setup Account' below to verify OTP.";
+                if (user.Role == "Admin" || user.Role == "SuperAdmin")
+                {
+                    ViewBag.Error = "First-time administrator setup required. Please click 'Verify OTP & Setup' below to create your password.";
+                    return View();
+                }
+                else
+                {
+                    ViewBag.Error = "First time borrower setup required. Please register your account to activate your portal credentials.";
+                    return View();
+                }
+            }
+
+            bool passwordValid = false;
+            try
+            {
+                passwordValid = BCrypt.Net.BCrypt.Verify(password, user.Password);
+            }
+            catch
+            {
+                passwordValid = false;
+            }
+
+            if (!passwordValid)
+            {
+                ViewBag.Error = "Invalid credentials. Please verify your password and try again.";
                 return View();
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
+            // Smart dynamic routing based on verified role
+            if (user.Role == "Admin" || user.Role == "SuperAdmin")
             {
-                ViewBag.Error = "Invalid Password.";
-                return View();
+                // Clear any borrower session and sign into Admin scheme
+                await HttpContext.SignOutAsync(BorrowerAuthController.BorrowerAuthScheme);
+                await SignInUser(user.Username, user.Email, user.Role, rememberMe);
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Portal", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Redirect(returnUrl);
+                }
+
+                return RedirectToAction("Index", "Home");
             }
-
-            await SignInUser(user.Username, user.Email);
-
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            else
             {
-                return Redirect(returnUrl);
-            }
+                // Borrower account
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalizedEmail);
+                if (customer == null)
+                {
+                    int nextId = (await _context.Customers.MaxAsync(c => (int?)c.CustomerId) ?? 100) + 1;
+                    customer = new Customer
+                    {
+                        CustomerId = nextId,
+                        Name = user.FullName ?? user.Username,
+                        Email = user.Email,
+                        CountryCode = "+91",
+                        Phone = "9999999999",
+                        CreditStatus = "Pending",
+                        KycStatus = "Pending",
+                        MonthlyIncome = 25000,
+                        Address = "Field Center Onboarding",
+                        PinCode = "110001"
+                    };
+                    _context.Customers.Add(customer);
+                    await _context.SaveChangesAsync();
+                }
 
-            return RedirectToAction("Index", "Home");
+                // Clear any admin session and sign into Borrower scheme
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                await SignInBorrowerAsync(customer, rememberMe);
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Home", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Redirect(returnUrl);
+                }
+
+                return RedirectToAction("Dashboard", "Portal");
+            }
         }
 
         [HttpGet]
@@ -175,15 +248,48 @@ namespace FinGuard.Controllers
             return View("VerifyOtp");
         }
 
-        private async Task SignInUser(string username, string email)
+        private async Task SignInUser(string username, string email, string role = "Admin", bool rememberMe = false)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, username),
-                new Claim(ClaimTypes.Email, email)
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, role)
             };
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
+            };
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+        }
+
+        private async Task SignInBorrowerAsync(Customer customer, bool rememberMe = false)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, customer.Name),
+                new Claim(ClaimTypes.Email, customer.Email),
+                new Claim(ClaimTypes.NameIdentifier, customer.CustomerId.ToString()),
+                new Claim("CustomerId", customer.CustomerId.ToString()),
+                new Claim(ClaimTypes.Role, "Borrower")
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, BorrowerAuthController.BorrowerAuthScheme);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(4)
+            };
+
+            await HttpContext.SignInAsync(
+                BorrowerAuthController.BorrowerAuthScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
         }
 
         [HttpGet]
@@ -270,11 +376,12 @@ namespace FinGuard.Controllers
             return View("Login");
         }
 
+        [HttpGet]
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(BorrowerAuthController.BorrowerAuthScheme);
             return RedirectToAction("Login");
         }
     }

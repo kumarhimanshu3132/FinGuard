@@ -1,0 +1,212 @@
+@model List<FinGuard.Models.DisbursementHistoryItemViewModel>
+
+@{
+    ViewData["Title"] = "Loan Disbursements";
+    Layout = "_BorrowerLayout";
+    var eligibleLoans = ViewBag.EligibleLoans as List<FinGuard.Models.Loan> ?? new();
+    var bankAccounts = ViewBag.BankAccounts as List<FinGuard.Models.BankAccount> ?? new();
+    bool hasVerifiedAccount = ViewBag.HasVerifiedAccount as bool? ?? false;
+}
+
+<div class="bp-mobile-shell">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="fs-5 fw-bold text-dark mb-0">Loan Disbursements</h1>
+            <p class="text-secondary small mb-0">Institutional capital payout hub & transaction ledger</p>
+        </div>
+        <a asp-action="BankAccounts" class="btn btn-sm btn-light border text-secondary px-3 py-1">
+            <i class="fa-solid fa-building-columns me-1"></i> Bank Accounts
+        </a>
+    </div>
+
+    <!-- Mandatory Simulation Disclaimer Banner -->
+    <div class="alert alert-info d-flex align-items-start gap-2 p-3 mb-3 rounded-3 small border-info-subtle shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-info text-primary mt-1 fs-5 flex-shrink-0" aria-hidden="true"></i>
+        <div class="text-dark" style="font-size: 0.78rem; line-height: 1.45;">
+            <strong>Simulation Sandbox Notice:</strong> This module performs a sandbox simulation of institutional loan disbursement.
+            All transaction references, ledger movements, and voucher outputs are generated for demonstration and audit purposes.
+            <em>No actual fiat currency transfer occurs.</em>
+        </div>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-success-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check text-success fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["Success"]</div>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-danger-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation text-danger fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["Error"]</div>
+        </div>
+    }
+
+    <!-- 1. Eligible Approved Loans Ready for Disbursement -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-hand-holding-dollar text-indigo me-1"></i> Approved Loans Ready for Payout
+            </span>
+            <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 0.72rem;">@eligibleLoans.Count Available</span>
+        </div>
+
+        @if (eligibleLoans.Any())
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var loan in eligibleLoans)
+                {
+                    <div class="bp-card p-3 mb-0 border shadow-sm" style="border-left: 4px solid var(--bp-primary) !important;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold text-dark small">Loan Facility #@loan.LoanId</span>
+                            <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">
+                                <span class="bp-badge-dot"></span> Approved for Payout
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Sanctioned Principal:</span>
+                                <span class="fs-5 fw-bold text-dark num-tabular">₹@loan.PrincipalAmount.ToString("N2")</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Tenure & APR:</span>
+                                <span class="text-dark fw-semibold small">@loan.TenureMonths Mos @@ @loan.InterestRate% p.a.</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            @if (hasVerifiedAccount)
+                            {
+                                <a asp-action="DisburseLoan" asp-route-id="@loan.LoanId" class="bp-btn bp-btn-primary w-100 py-2 text-center text-decoration-none fs-6">
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Request Simulated Disbursement &rarr;
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 text-center small text-warning-emphasis">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Requires verified bank account.
+                                    <a asp-action="BankAccounts" class="fw-bold text-dark text-decoration-underline ms-1">Link/Verify Account</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="bp-card p-4 text-center border shadow-sm bg-light">
+                <div class="bp-kpi-icon indigo mx-auto mb-2" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <h2 class="fs-6 fw-bold text-dark mb-1">No Pending Disbursements</h2>
+                <p class="text-secondary small mb-2" style="font-size: 0.78rem;">
+                    All active loans are already disbursed. If you recently submitted a loan application, it will appear here once approved by an operations officer.
+                </p>
+                <a asp-action="Apply" class="small text-indigo fw-semibold text-decoration-none">
+                    Apply for New Credit Facility &rarr;
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- 2. Bank Account Status Indicator -->
+    <div class="bp-card p-3 mb-4 border shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-building-columns text-indigo me-1"></i> Destination Bank Account Mandate
+            </span>
+            <a asp-action="BankAccounts" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                Manage &rarr;
+            </a>
+        </div>
+
+        @if (hasVerifiedAccount)
+        {
+            var primaryAcc = bankAccounts.FirstOrDefault(a => a.IsPrimary && a.VerificationStatus == "Verified")
+                             ?? bankAccounts.FirstOrDefault(a => a.VerificationStatus == "Verified");
+
+            <div class="p-2 bg-light rounded-3 border d-flex align-items-center justify-content-between small">
+                <div>
+                    <div class="fw-semibold text-dark">@primaryAcc?.BankName</div>
+                    <div class="text-secondary font-monospace" style="font-size: 0.75rem;">@primaryAcc?.MaskedAccountNumber (IFSC: @primaryAcc?.IFSCCode)</div>
+                </div>
+                <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">
+                    <span class="bp-badge-dot"></span> Payout Eligible
+                </span>
+            </div>
+        }
+        else
+        {
+            <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25 small text-secondary">
+                <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+                You do not have a <strong>Verified</strong> bank account on file. Add and verify your bank account to enable instant simulated disbursements.
+                <div class="mt-2">
+                    <a asp-action="BankAccounts" class="btn btn-sm btn-primary py-1 px-3">Open Bank Accounts</a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- 3. Simulated Disbursement Ledger / History -->
+    <div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-clock-rotate-left text-indigo me-1"></i> Disbursement Transaction History
+            </span>
+            <span class="text-muted small" style="font-size: 0.72rem;">@Model.Count Transactions</span>
+        </div>
+
+        @if (Model != null && Model.Any())
+        {
+            <div class="d-flex flex-column gap-2 mb-4">
+                @foreach (var disb in Model)
+                {
+                    <div class="bp-card p-3 mb-0 border shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                            <div>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1" style="font-size: 0.68rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Simulated Success
+                                </span>
+                                <span class="text-muted small ms-1" style="font-size: 0.72rem;">@disb.CreatedAtUtc.ToString("dd MMM yyyy, hh:mm tt")</span>
+                            </div>
+                            <a asp-action="DisbursementReceipt" asp-route-id="@disb.DisbursementId" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-semibold" style="font-size: 0.72rem;">
+                                <i class="fa-solid fa-receipt me-1"></i> Voucher
+                            </a>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <div class="fw-bold text-dark font-monospace small">@disb.TransactionReference</div>
+                                <div class="text-secondary small" style="font-size: 0.75rem;">
+                                    Destination: @disb.BankName (@disb.MaskedAccountNumber)
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-muted small" style="font-size: 0.7rem;">Net Disbursed</div>
+                                <div class="fs-6 fw-bold text-success num-tabular">₹@disb.NetDisbursedAmount.ToString("N2")</div>
+                            </div>
+                        </div>
+
+                        <div class="p-2 rounded bg-light border d-flex justify-content-between small text-muted" style="font-size: 0.72rem;">
+                            <span>Facility: <strong>Loan #@disb.LoanId</strong></span>
+                            <span>Principal: ₹@disb.PrincipalAmount.ToString("N2") | Fee: ₹@disb.Deductions.ToString("N2")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="bp-card p-4 text-center border shadow-sm bg-light">
+                <div class="text-muted small">No past disbursement records logged yet.</div>
+            </div>
+        }
+    </div>
+</div>

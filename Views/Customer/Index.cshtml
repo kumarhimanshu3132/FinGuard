@@ -1,158 +1,89 @@
 @model IEnumerable<FinGuard.Models.Customer>
 
 @{
-    ViewData["Title"] = "Customers";
+    ViewData["Title"] = "Customer Directory";
+    var totalCount = Model != null ? Model.Count() : 0;
 }
 
-<style>
-    .page-header {
-        margin-bottom: 2.5rem;
-        margin-top: 1rem;
-    }
-
-    .header-title {
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.5px;
-    }
-
-    .btn-add {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        border: none;
-        box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.3);
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .btn-add:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 20px -4px rgba(99, 102, 241, 0.5);
-        color: white;
-    }
-
-    .custom-table {
-        margin-bottom: 0;
-        width: 100%;
-        color: var(--text-primary);
-    }
-
-    .custom-table th {
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--text-primary);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
-        padding: 1.2rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .custom-table td {
-        padding: 1.2rem 1.5rem;
-        vertical-align: middle;
-        color: var(--text-primary);
-        font-weight: 500;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .custom-table tr:hover td {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .status-badge {
-        padding: 6px 12px;
-        border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .status-pending {
-        background: #fef3c7;
-        color: #d97706;
-    }
-
-    .status-active {
-        background: #d1fae5;
-        color: #059669;
-    }
-
-    .empty-state {
-        padding: 4rem 2rem;
-        text-align: center;
-    }
-</style>
-
-<div class="page-header d-flex justify-content-between align-items-center" style="max-width: 1000px; margin: 1rem auto 2.5rem;">
-    <h2 class="header-title mb-0" style="color: var(--text-primary);">Customer Directory</h2>
-    <a href="/Customer/Create" class="btn-add">+ Onboard Customer</a>
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-users text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Customer Directory
+            <span class="fg-count-badge">@totalCount Records</span>
+        </h1>
+        <p class="fg-page-subtitle">Verified borrower registry, KYC compliance tracking, and profile management.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Create" class="fg-btn fg-btn-primary fg-btn-sm">
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+            <span>Onboard Customer</span>
+        </a>
+    </div>
 </div>
 
+<!-- Standardized Flash Alerts -->
 @if (TempData["Success"] != null)
 {
-    <div id="alertBoxSuccess" class="alert alert-success d-flex align-items-center"
-         style="max-width: 1000px; margin: 0 auto 1.5rem; border-radius: 12px; font-weight: 600; transition: opacity 0.5s ease;">
-        <span class="me-2">✅</span> @TempData["Success"]
+    <div id="alertBoxSuccess" class="fg-alert fg-alert-success" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
     </div>
 }
 
 @if (TempData["Error"] != null)
 {
-    <div id="alertBoxError" class="alert alert-danger d-flex align-items-center"
-         style="max-width: 1000px; margin: 0 auto 1.5rem; border-radius: 12px; font-weight: 600; transition: opacity 0.5s ease;">
-        <span class="me-2">⚠️</span> @TempData["Error"]
+    <div id="alertBoxError" class="fg-alert fg-alert-danger" role="alert">
+        <i class="fa-solid fa-circle-exclamation fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Error"]</div>
     </div>
 }
 
 @if (TempData["ErrorMessage"] != null)
 {
-    <div id="alertBoxErrorMessage" class="alert alert-warning d-flex align-items-center"
-         style="max-width: 1000px; margin: 0 auto 1.5rem; border-radius: 12px; font-weight: 600; background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; transition: opacity 0.5s ease;">
-        <span class="me-2">⚠️</span> @TempData["ErrorMessage"]
+    <div id="alertBoxErrorMessage" class="fg-alert fg-alert-warning" role="alert">
+        <i class="fa-solid fa-triangle-exclamation fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["ErrorMessage"]</div>
     </div>
 }
 
-<script>
-    setTimeout(function () {
-        var successBox = document.getElementById('alertBoxSuccess');
-        if (successBox) {
-            successBox.style.opacity = '0';
-            setTimeout(function () { successBox.style.display = 'none'; }, 500);
-        }
+<!-- Table Card with Search & Filters -->
+<div class="fg-card fg-card-flush">
+    <!-- Filter & Search Bar -->
+    <div class="fg-filter-bar">
+        <div class="fg-search-input-group">
+            <i class="fa-solid fa-magnifying-glass fg-search-icon" aria-hidden="true"></i>
+            <input type="text" id="customerSearchInput" class="fg-search-input"
+                   placeholder="Search by ID, name, email or phone..." aria-label="Search customers" />
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <select id="statusFilterSelect" class="fg-filter-select" aria-label="Filter by Credit Status">
+                <option value="">All Credit Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+            </select>
+            <select id="kycFilterSelect" class="fg-filter-select" aria-label="Filter by KYC Status">
+                <option value="">All KYC Statuses</option>
+                <option value="Verified">Verified</option>
+                <option value="Pending">Pending</option>
+                <option value="Failed">Failed</option>
+            </select>
+        </div>
+    </div>
 
-        var errorBox = document.getElementById('alertBoxError');
-        if (errorBox) {
-            errorBox.style.opacity = '0';
-            setTimeout(function () { errorBox.style.display = 'none'; }, 500);
-        }
-
-        var errorMessageBox = document.getElementById('alertBoxErrorMessage');
-        if (errorMessageBox) {
-            errorMessageBox.style.opacity = '0';
-            setTimeout(function () { errorMessageBox.style.display = 'none'; }, 500);
-        }
-    }, 4000);
-</script>
-
-<div class="fg-card" style="max-width: 1000px; margin: 0 auto; padding: 0; overflow: hidden;">
-    <div class="table-responsive">
-        <table class="custom-table">
+    <!-- Responsive Table -->
+    <div class="fg-table-responsive">
+        <table class="fg-table" id="customerTable">
             <thead>
                 <tr>
-                    <th class="text-light">ID</th>
-                    <th class="text-light">Name</th>
-                    <th class="text-light">Phone</th>
-                    <th class="text-light">Monthly Income</th>
-                    <th class="text-light">Credit Status</th>
-                    <th class="text-light">KYC Status</th>
-                    <th class="text-light">Actions</th>
+                    <th scope="col" style="width: 100px;">Customer ID</th>
+                    <th scope="col">Borrower Name</th>
+                    <th scope="col">Contact Info</th>
+                    <th scope="col" class="text-end">Monthly Income</th>
+                    <th scope="col" class="text-center">Credit Status</th>
+                    <th scope="col" class="text-center">KYC Status</th>
+                    <th scope="col" class="text-end" style="width: 220px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -160,55 +91,97 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
-                            <td class="text-light opacity-75">#@item.CustomerId</td>
-                            <td class="fw-bold text-light">@item.Name</td>
-                            <td class="text-light">@item.CountryCode @item.Phone</td>
-                            <td class="fw-bold" style="color: var(--success-color);">₹@item.MonthlyIncome</td>
+                        <tr class="customer-row"
+                            data-search="@item.CustomerId @item.Name.ToLower() @item.Email.ToLower() @item.Phone"
+                            data-credit="@item.CreditStatus"
+                            data-kyc="@item.KycStatus">
                             <td>
+                                <span class="fg-row-id">#@item.CustomerId</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@item.Name</div>
+                                <div class="text-muted small">@item.Email</div>
+                            </td>
+                            <td>
+                                <div class="num-tabular text-secondary">
+                                    <span class="text-muted me-1">@item.CountryCode</span>@item.Phone
+                                </div>
+                            </td>
+                            <td class="text-end num-tabular fw-semibold text-dark">
+                                ₹@item.MonthlyIncome.ToString("N2")
+                            </td>
+                            <td class="text-center">
                                 @if (item.CreditStatus == "Active")
                                 {
-                                    <span class="status-badge status-active">@item.CreditStatus</span>
+                                    <span class="fg-badge fg-badge-success">
+                                        <span class="fg-badge-dot"></span>
+                                        Active
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="status-badge status-pending">@item.CreditStatus</span>
+                                    <span class="fg-badge fg-badge-warning">
+                                        <span class="fg-badge-dot"></span>
+                                        Pending
+                                    </span>
                                 }
                             </td>
-                            <td>
+                            <td class="text-center">
                                 @if (item.KycStatus == "Verified")
                                 {
-                                    <span class="status-badge status-active">Verified</span>
+                                    <span class="fg-badge fg-badge-success">
+                                        <span class="fg-badge-dot"></span>
+                                        Verified
+                                    </span>
                                 }
                                 else if (item.KycStatus == "Failed")
                                 {
-                                    <span class="status-badge" style="background: #fee2e2; color: #991b1b;">Failed</span>
+                                    <span class="fg-badge fg-badge-danger">
+                                        <span class="fg-badge-dot"></span>
+                                        Failed
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="status-badge status-pending">Pending</span>
+                                    <span class="fg-badge fg-badge-warning">
+                                        <span class="fg-badge-dot"></span>
+                                        Pending
+                                    </span>
                                 }
                             </td>
-                            <td class="d-flex align-items-center gap-2 justify-content-center">
-                                <a asp-action="Edit" asp-route-id="@item.CustomerId"
-                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">Edit</a>
+                            <td class="text-end">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <a asp-action="Edit" asp-route-id="@item.CustomerId"
+                                       class="fg-btn fg-btn-secondary fg-btn-sm" title="Edit Profile">
+                                        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                                        <span>Edit</span>
+                                    </a>
 
-                                @if (item.KycStatus == "Pending")
-                                {
-                                    <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId" 
-                                       class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">Verify Identity</a>
-                                }
-                                else if (item.KycStatus == "Failed")
-                                {
-                                    <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId" 
-                                       class="btn btn-sm btn-warning rounded-pill px-3 fw-bold text-dark">Retry KYC</a>
-                                }
+                                    @if (item.KycStatus == "Pending")
+                                    {
+                                        <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId"
+                                           class="fg-btn fg-btn-secondary fg-btn-sm text-warning" title="Verify Identity">
+                                            <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                                            <span>KYC</span>
+                                        </a>
+                                    }
+                                    else if (item.KycStatus == "Failed")
+                                    {
+                                        <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId"
+                                           class="fg-btn fg-btn-danger fg-btn-sm" title="Retry KYC">
+                                            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                                            <span>Retry</span>
+                                        </a>
+                                    }
 
-                                <form asp-action="Delete" asp-route-id="@item.CustomerId" method="post" class="m-0"
-                                      onsubmit="return confirm('Are you sure you want to delete this customer?');">
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">Delete</button>
-                                </form>
+                                    <form asp-action="Delete" asp-route-id="@item.CustomerId" method="post" class="d-inline m-0"
+                                          onsubmit="return confirm('Are you sure you want to delete customer #@item.CustomerId (@item.Name)? Active loans must be cleared first.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="fg-btn fg-btn-danger fg-btn-sm" title="Delete customer">
+                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -216,9 +189,18 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" class="empty-state">
-                            <h5 class="fw-bold text-light">No customers found</h5>
-                            <p class="text-light opacity-75 mb-0">Click "+ Onboard Customer" to add your first member.</p>
+                        <td colspan="7" class="p-0">
+                            <div class="fg-empty-state">
+                                <div class="fg-empty-icon">
+                                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="fg-empty-title">No Customers Registered</h3>
+                                <p class="fg-empty-desc">Your customer directory is empty. Onboard your first borrower to evaluate credit and issue loans.</p>
+                                <a asp-action="Create" class="fg-btn fg-btn-primary fg-btn-sm">
+                                    <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                                    <span>Onboard Customer</span>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -226,3 +208,53 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Client-side instant filter and search
+        (function () {
+            const searchInput = document.getElementById('customerSearchInput');
+            const creditFilter = document.getElementById('statusFilterSelect');
+            const kycFilter = document.getElementById('kycFilterSelect');
+            const rows = document.querySelectorAll('.customer-row');
+
+            function applyFilters() {
+                const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+                const creditVal = creditFilter ? creditFilter.value : '';
+                const kycVal = kycFilter ? kycFilter.value : '';
+
+                rows.forEach(row => {
+                    const searchData = row.getAttribute('data-search') || '';
+                    const rowCredit = row.getAttribute('data-credit') || '';
+                    const rowKyc = row.getAttribute('data-kyc') || '';
+
+                    const matchesQuery = !query || searchData.includes(query);
+                    const matchesCredit = !creditVal || rowCredit === creditVal;
+                    const matchesKyc = !kycVal || rowKyc === kycVal;
+
+                    if (matchesQuery && matchesCredit && matchesKyc) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchInput) searchInput.addEventListener('input', applyFilters);
+            if (creditFilter) creditFilter.addEventListener('change', applyFilters);
+            if (kycFilter) kycFilter.addEventListener('change', applyFilters);
+
+            // Auto-hide alert boxes smoothly after 4 seconds
+            ['alertBoxSuccess', 'alertBoxError', 'alertBoxErrorMessage'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    setTimeout(() => {
+                        el.style.transition = 'opacity 400ms ease';
+                        el.style.opacity = '0';
+                        setTimeout(() => el.remove(), 400);
+                    }, 4000);
+                }
+            });
+        })();
+    </script>
+}

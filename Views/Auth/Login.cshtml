@@ -1,319 +1,148 @@
 @{
-    ViewData["Title"] = "Secure Auth";
-    Layout = null;
+    ViewData["Title"] = "Sign In - FinGuard";
+    Layout = "_BorrowerLayout";
+    string returnUrl = (ViewData["ReturnUrl"] as string) ?? "";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - FinGuard</title>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-
-            body {
-                font-family: 'Inter', sans-serif;
-                background: #0f172a;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                height: 100vh;
-                background-image:
-                    radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 40%),
-                    radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.15), transparent 40%);
-                color: #ffffff;
-            }
-
-            h1 {
-                font-weight: 800;
-                margin: 0 0 10px;
-                color: #ffffff;
-            }
-
-            p {
-                font-size: 14px;
-                font-weight: 400;
-                line-height: 20px;
-                letter-spacing: 0.5px;
-                margin: 10px 0 30px;
-                color: #94a3b8;
-            }
-
-            .auth-container {
-                background-color: rgba(30, 41, 59, 0.7);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 20px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 10px 10px rgba(0, 0, 0, 0.2);
-                position: relative;
-                overflow: hidden;
-                width: 800px;
-                max-width: 100%;
-                min-height: 520px;
-            }
-
-            .form-container {
-                position: absolute;
-                top: 0;
-                height: 100%;
-                transition: all 0.6s ease-in-out;
-            }
-
-            .sign-in-container {
-                left: 0;
-                width: 50%;
-                z-index: 2;
-                transition: all 0.6s ease-in-out;
-            }
-
-            .auth-container.right-panel-active .sign-in-container {
-                transform: translateX(100%);
-                opacity: 0;
-                z-index: 1;
-            }
-
-            .sign-up-container {
-                left: 0;
-                width: 50%;
-                opacity: 0;
-                z-index: 1;
-            }
-
-            .auth-container.right-panel-active .sign-up-container {
-                transform: translateX(100%);
-                opacity: 1;
-                z-index: 5;
-                animation: show 0.6s;
-            }
-
-            @@keyframes show {
-
-                0%,
-                49.99% {
-                    opacity: 0;
-                    z-index: 1;
-                }
-
-                50%,
-                100% {
-                    opacity: 1;
-                    z-index: 5;
-                }
-            }
-
-            .overlay-container {
-                position: absolute;
-                top: 0;
-                left: 50%;
-                width: 50%;
-                height: 100%;
-                overflow: hidden;
-                transition: transform 0.6s ease-in-out;
-                z-index: 100;
-            }
-
-            .auth-container.right-panel-active .overlay-container {
-                transform: translateX(-100%);
-            }
-
-            .overlay {
-                background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
-                background-repeat: no-repeat;
-                background-size: cover;
-                background-position: 0 0;
-                color: #ffffff;
-                position: relative;
-                left: -100%;
-                height: 100%;
-                width: 200%;
-                transform: translateX(0);
-                transition: transform 0.6s ease-in-out;
-            }
-
-            .auth-container.right-panel-active .overlay {
-                transform: translateX(50%);
-            }
-
-            .overlay-panel {
-                position: absolute;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-                padding: 0 40px;
-                text-align: center;
-                top: 0;
-                height: 100%;
-                width: 50%;
-                transform: translateX(0);
-                transition: transform 0.6s ease-in-out;
-            }
-
-            .overlay-left {
-                transform: translateX(-20%);
-            }
-
-            .auth-container.right-panel-active .overlay-left {
-                transform: translateX(0);
-            }
-
-            .overlay-right {
-                right: 0;
-                transform: translateX(0);
-            }
-
-            .auth-container.right-panel-active .overlay-right {
-                transform: translateX(20%);
-            }
-
-            form {
-                background-color: transparent;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-                padding: 0 50px;
-                height: 100%;
-                text-align: center;
-            }
-
-            input {
-                background-color: rgba(15, 23, 42, 0.6);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                color: #ffffff;
-                border-radius: 10px;
-                padding: 12px 15px;
-                margin: 8px 0;
-                width: 100%;
-                outline: none;
-                transition: border-color 0.2s, background-color 0.2s;
-            }
-        
-            input::placeholder {
-                color: #64748b;
-            }
-
-            input:focus {
-                border-color: #6366f1;
-                background-color: rgba(15, 23, 42, 0.9);
-            }
-
-            button {
-                border-radius: 10px;
-                border: 1px solid #4f46e5;
-                background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 700;
-                padding: 12px 45px;
-                letter-spacing: 1px;
-                transition: transform 80ms ease-in, opacity 0.2s;
-                cursor: pointer;
-                margin-top: 15px;
-                width: 100%;
-            }
-
-            button:active {
-                transform: scale(0.97);
-            }
-
-            button:hover {
-                opacity: 0.9;
-            }
-
-            button.ghost {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                backdrop-filter: blur(5px);
-            }
-
-            button.ghost:hover {
-                background: rgba(255, 255, 255, 0.2);
-            }
-
-            .error-message {
-                color: #fca5a5;
-                font-size: 13px;
-                font-weight: 600;
-                margin-bottom: 10px;
-                background: rgba(239, 68, 68, 0.2);
-                border: 1px solid rgba(239, 68, 68, 0.3);
-                padding: 10px 12px;
-                border-radius: 8px;
-                width: 100%;
-            }
-    </style>
-</head>
-
-<body>
-    <div class="auth-container" id="auth-container">
-        
-        <!-- Setup Account Form -->
-        <div class="form-container sign-up-container">
-            <form asp-action="Setup" method="post">
-                @Html.AntiForgeryToken()
-                <h1>Create Account</h1>
-                <p>Set up a new administrator profile</p>
-                
-                <input type="email" name="email" placeholder="Email Address" required />
-                <input type="password" name="password" placeholder="Password" required />
-                <input type="password" name="confirmPassword" placeholder="Confirm Password" required />
-                
-                <button type="submit">Sign Up</button>
-            </form>
-        </div>
-        
-        <!-- Sign In Form -->
-        <div class="form-container sign-in-container">
-            <form asp-action="Login" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
-                
-                <h1>Sign In</h1>
-                <p>Access the FinGuard dashboard</p>
-
-                @if (ViewBag.Error != null)
-                {
-                    <div class="error-message">@ViewBag.Error</div>
-                }
-
-                <input type="email" name="email" placeholder="Registered Email" required />
-                <input type="password" name="password" placeholder="Password" required />
-                
-                <a asp-action="ForgotPassword"
-                   style="color: #64748b; font-size: 13px; margin-top: 15px; text-decoration: none; font-weight: 600;">Forgot
-                    your password?</a>
-                
-                    <button type="submit">Secure Login</button>
-                </form>
+<div class="row justify-content-center py-4 py-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <div class="bp-card p-4 p-md-5">
+            <!-- Brand Identity & Unified Access Message -->
+            <div class="text-center mb-4">
+                <div class="bp-brand-icon mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.35rem;">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                </div>
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light border rounded-pill mb-2 small text-secondary fw-semibold">
+                    <i class="fa-solid fa-lock text-indigo"></i> Unified Secure Access
+                </div>
+                <h1 class="fs-4 fw-bold text-dark mb-1">Sign In to FinGuard</h1>
+                <p class="text-secondary small mb-0">Enter your registered email and password to automatically access your dashboard.</p>
             </div>
-        
-            <!-- Interactive Overlay -->
-            <div class="overlay-container">
-                <div class="overlay">
-                    <div class="overlay-panel overlay-left">
-                        <h1>Welcome Back!</h1>
-                        <p>To access the system, please login with your registered credentials.</p>
-                        <button class="ghost" id="signIn">Sign In</button>
+
+            <!-- Feedback Notifications -->
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-danger-subtle" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-1 flex-shrink-0 text-danger" aria-hidden="true"></i>
+                    <div>@ViewBag.Error</div>
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-success-subtle" role="alert">
+                    <i class="fa-solid fa-circle-check mt-1 flex-shrink-0 text-success" aria-hidden="true"></i>
+                    <div>@TempData["Success"]</div>
+                </div>
+            }
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="alert alert-info d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 p-3 mb-4 rounded-3 small border-info-subtle">
+                    <div>
+                        <i class="fa-solid fa-circle-user me-1 text-primary"></i>
+                        Currently signed in as: <strong>@User.Identity?.Name</strong>
                     </div>
-                    <div class="overlay-panel overlay-right">
-                        <h1>New Here?</h1>
-                        <p>Enter your details and setup your FinGuard account today to get started.</p>
-                        <button class="ghost" id="signUp" onclick="window.location.href='/Auth/Register'">Setup Account</button>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                        {
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                <i class="fa-solid fa-gauge me-1"></i> Operations Dashboard
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Portal" asp-action="Dashboard" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                <i class="fa-solid fa-house me-1"></i> Client Dashboard
+                            </a>
+                        }
+                        <a asp-action="Logout" class="btn btn-sm btn-outline-danger py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Sign Out
+                        </a>
                     </div>
                 </div>
+            }
+
+            <!-- Unified Sign In Form -->
+            <form asp-controller="Auth" asp-action="Login" method="post" id="unifiedAuthLoginForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <!-- Email Input -->
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                        </span>
+                        <input type="email" name="email" class="form-control border-start-0"
+                               placeholder="name@example.com" autocomplete="email" required autofocus />
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label small fw-semibold text-secondary mb-0">Password</label>
+                        <a asp-action="ForgotPassword" class="small text-decoration-none text-indigo fw-medium">Forgot password?</a>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        </span>
+                        <input type="password" name="password" id="authPasswordInput"
+                               class="form-control border-start-0 border-end-0" placeholder="••••••••"
+                               autocomplete="current-password" required />
+                        <button type="button" class="btn btn-outline-secondary border-start-0 bp-toggle-password"
+                                data-target="authPasswordInput" aria-label="Toggle password visibility">
+                            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Session -->
+                <div class="mb-4 form-check">
+                    <input type="checkbox" name="rememberMe" value="true" class="form-check-input" id="rememberAuthSessionCheck" />
+                    <label class="form-check-label small text-secondary" for="rememberAuthSessionCheck">Remember this device</label>
+                </div>
+
+                <!-- Primary Sign In Action -->
+                <button type="submit" id="btnSubmitAuthLogin" class="bp-btn bp-btn-primary w-100 py-2 fs-6 mb-3">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1" aria-hidden="true"></i> Sign In
+                </button>
+            </form>
+
+            <!-- Borrower Registration Action -->
+            <div class="text-center pt-3 border-top">
+                <a asp-controller="BorrowerAuth" asp-action="Register" class="bp-btn bp-btn-secondary w-100 py-2 text-decoration-none fs-6">
+                    <i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i> Create Borrower Account
+                </a>
+            </div>
+
+            <!-- Intelligent Routing Indicator Notice -->
+            <div class="mt-4 pt-3 border-top text-center text-muted" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-route text-indigo me-1"></i>
+                Smart Role Verification: Automatically routes administrators to the Operations Dashboard and borrowers to the Client Portal.
             </div>
         </div>
-    </body>
+    </div>
+</div>
 
-</html>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('unifiedAuthLoginForm');
+            const submitBtn = document.getElementById('btnSubmitAuthLogin');
+
+            if (form && submitBtn) {
+                form.addEventListener('submit', function () {
+                    if (form.checkValidity()) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Signing In...';
+                    }
+                });
+            }
+        });
+    </script>
+}

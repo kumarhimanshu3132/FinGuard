@@ -1,0 +1,274 @@
+@model FinGuard.Models.LoanApplicationViewModel
+
+@{
+    ViewData["Title"] = "Apply for a Loan";
+    Layout = "_BorrowerLayout";
+    var customer = ViewBag.Customer as FinGuard.Models.Customer;
+    bool hasActiveLoan = ViewBag.HasActiveLoan as bool? ?? false;
+    bool hasPendingLoan = ViewBag.HasPendingLoan as bool? ?? false;
+}
+
+<div class="bp-page-header">
+    <div>
+        <h1 class="bp-page-title">Microfinance Loan Application</h1>
+        <p class="bp-page-subtitle">Multi-step digital loan request. Subject to field officer appraisal and institutional terms.</p>
+    </div>
+    <div>
+        <a asp-action="Dashboard" class="bp-btn bp-btn-secondary bp-btn-sm">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+@if (hasActiveLoan)
+{
+    <div class="bp-card border-warning border-start border-4 p-4 mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="bp-kpi-icon warning" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h2 class="fs-6 fw-bold text-dark mb-1">Active Loan in Progress</h2>
+                <p class="text-secondary small mb-2">
+                    Our responsible microfinance lending charter permits one active credit facility per borrower to prevent household over-indebtedness.
+                </p>
+                <a asp-action="Dashboard" class="bp-btn bp-btn-secondary bp-btn-sm">View Current Active Loan</a>
+            </div>
+        </div>
+    </div>
+}
+else if (hasPendingLoan)
+{
+    <div class="bp-card border-info border-start border-4 p-4 mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="bp-kpi-icon indigo" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h2 class="fs-6 fw-bold text-dark mb-1">Pending Application Under Review</h2>
+                <p class="text-secondary small mb-2">
+                    You already have a loan application in progress. You can track its field verification status from the applications screen.
+                </p>
+                <a asp-action="Applications" class="bp-btn bp-btn-secondary bp-btn-sm">Track Application Status</a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="bp-card p-4 p-md-5">
+                <!-- 4-Step Stepper Header -->
+                <div class="bp-stepper">
+                    <div class="bp-step active" id="stepIndicator0">
+                        <div class="bp-step-circle">1</div>
+                        <span class="bp-step-title d-none d-sm-inline">Applicant</span>
+                    </div>
+                    <div class="bp-step" id="stepIndicator1">
+                        <div class="bp-step-circle">2</div>
+                        <span class="bp-step-title d-none d-sm-inline">Capital Request</span>
+                    </div>
+                    <div class="bp-step" id="stepIndicator2">
+                        <div class="bp-step-circle">3</div>
+                        <span class="bp-step-title d-none d-sm-inline">Financial Profile</span>
+                    </div>
+                    <div class="bp-step" id="stepIndicator3">
+                        <div class="bp-step-circle">4</div>
+                        <span class="bp-step-title d-none d-sm-inline">Review & Submit</span>
+                    </div>
+                </div>
+
+                <form asp-action="Apply" method="post" id="loanApplyForm" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-3 rounded-3 mb-4"></div>
+
+                    <!-- STEP 1: Applicant Information -->
+                    <div class="bp-wizard-pane" data-step-index="0">
+                        <h2 class="fs-6 fw-bold text-dark mb-1">Step 1 — Applicant Profile & Identity Verification</h2>
+                        <p class="text-secondary small mb-4">Verify that your registered profile credentials match your official identity documents.</p>
+
+                        <div class="p-3 bg-light rounded-3 border mb-4">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-muted small">Applicant Name:</div>
+                                    <div class="fw-bold text-dark">@(customer?.Name ?? User.Identity?.Name)</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">Registered Mobile:</div>
+                                    <div class="fw-bold text-dark">@(customer?.Phone ?? "Verified on file")</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">Residential Address:</div>
+                                    <div class="text-dark small">@(customer?.Address ?? "Recorded on file")</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">KYC Verification Status:</div>
+                                    <span class="bp-badge @(customer?.KycStatus == "Verified" ? "bp-badge-success" : "bp-badge-warning")">
+                                        <span class="bp-badge-dot"></span> @(customer?.KycStatus ?? "Pending")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="bp-btn bp-btn-primary bp-btn-next-step">
+                                Continue to Capital Request <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Capital Request -->
+                    <div class="bp-wizard-pane d-none" data-step-index="1">
+                        <h2 class="fs-6 fw-bold text-dark mb-1">Step 2 — Loan Request & Repayment Terms</h2>
+                        <p class="text-secondary small mb-4">Select desired principal capital and repayment duration.</p>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="RequestedPrincipal" class="form-label small fw-semibold text-secondary">
+                                    Requested Principal Amount (₹) *
+                                </label>
+                                <input asp-for="RequestedPrincipal" id="bpReqPrincipal" type="number" min="5000" max="200000" step="1000"
+                                       class="form-control form-control-lg num-tabular fw-bold text-dark" required />
+                                <span asp-validation-for="RequestedPrincipal" class="text-danger small mt-1 d-block"></span>
+                                <div class="form-text small text-muted">Eligible range: ₹5,000 to ₹200,000</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="TenureMonths" class="form-label small fw-semibold text-secondary">
+                                    Repayment Duration *
+                                </label>
+                                <select asp-for="TenureMonths" id="bpReqTenure" class="form-select form-select-lg" required>
+                                    <option value="6">6 Months</option>
+                                    <option value="12">12 Months (1 Year)</option>
+                                    <option value="18">18 Months</option>
+                                    <option value="24">24 Months (2 Years)</option>
+                                    <option value="36">36 Months (3 Years)</option>
+                                </select>
+                                <span asp-validation-for="TenureMonths" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Purpose" class="form-label small fw-semibold text-secondary">Loan Purpose *</label>
+                                <select asp-for="Purpose" class="form-select" required>
+                                    <option value="Small Business / Working Capital">Small Business / Working Capital</option>
+                                    <option value="Agricultural Inputs & Livestock">Agricultural Inputs & Livestock</option>
+                                    <option value="Equipment & Tool Purchase">Equipment & Tool Purchase</option>
+                                    <option value="Home Improvement / Sanitation">Home Improvement / Sanitation</option>
+                                    <option value="Education & Skill Training">Education & Skill Training</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Live Computation Box -->
+                        <div class="p-3 bg-light rounded-3 border mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-secondary small">Calculated Monthly Installment (EMI):</span>
+                                <strong class="fs-4 text-indigo num-tabular" id="bpDispEmi">₹0.00</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.8rem;">
+                                <span>Total Payable over duration:</span>
+                                <span id="bpDispTotal" class="num-tabular fw-semibold text-dark">₹0.00</span>
+                            </div>
+                            <div class="text-muted mt-2" style="font-size: 0.75rem;">
+                                Calculated at fixed microfinance rate of 12.0% per annum. No processing advance fee required.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="bp-btn bp-btn-secondary bp-btn-prev-step">Back</button>
+                            <button type="button" class="bp-btn bp-btn-primary bp-btn-next-step">
+                                Continue to Financial Profile <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Financial Profile -->
+                    <div class="bp-wizard-pane d-none" data-step-index="2">
+                        <h2 class="fs-6 fw-bold text-dark mb-1">Step 3 — Household Financial Declarations</h2>
+                        <p class="text-secondary small mb-4">Declare monthly household income for debt-to-income affordability checks.</p>
+
+                        <div class="mb-4">
+                            <label asp-for="MonthlyHouseholdIncome" class="form-label small fw-semibold text-secondary">
+                                Net Monthly Household Income (₹) *
+                            </label>
+                            <input asp-for="MonthlyHouseholdIncome" type="number" min="1000" class="form-control" required />
+                            <span asp-validation-for="MonthlyHouseholdIncome" class="text-danger small mt-1 d-block"></span>
+                            <div class="form-text small text-muted">Combined earnings from all active family members or enterprise.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="bp-btn bp-btn-secondary bp-btn-prev-step">Back</button>
+                            <button type="button" class="bp-btn bp-btn-primary bp-btn-next-step">
+                                Review Application <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Review & Submit -->
+                    <div class="bp-wizard-pane d-none" data-step-index="3">
+                        <h2 class="fs-6 fw-bold text-dark mb-1">Step 4 — Review & Affirmation</h2>
+                        <p class="text-secondary small mb-4">Verify your application terms prior to official field submission.</p>
+
+                        <div class="p-3 bg-light rounded-3 border mb-4">
+                            <div class="row g-3 small">
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Applicant Name:</span>
+                                    <strong class="text-dark d-block">@(customer?.Name ?? User.Identity?.Name)</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Borrower ID:</span>
+                                    <strong class="text-dark d-block">#@(customer?.CustomerId ?? 0)</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Requested Principal:</span>
+                                    <strong class="text-indigo d-block num-tabular" id="reviewPrincipal">₹30,000.00</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Repayment Duration:</span>
+                                    <strong class="text-dark d-block" id="reviewTenure">12 Months</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Interest Term:</span>
+                                    <strong class="text-dark d-block">12.0% Fixed APR</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-secondary">Processing Protocol:</span>
+                                    <strong class="text-dark d-block">Field Appraisal Review</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" name="AgreeTerms" value="true" class="form-check-input" id="agreeTermsCheck" @(Model.AgreeTerms ? "checked" : "") />
+                            <label class="form-check-label small text-secondary" for="agreeTermsCheck">
+                                I solemnly affirm that the declared financial particulars are authentic. I agree to attend designated group center meetings for periodic installment recovery upon sanctioned disbursement.
+                            </label>
+                            <span class="text-danger small mt-1 d-none" id="agreeTermsError">
+                                You must confirm that you have read and agreed to the lending guidelines.
+                            </span>
+                            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ContainsKey("AgreeTerms"))
+                            {
+                                <span class="text-danger small mt-1 d-block">
+                                    @ViewData.ModelState["AgreeTerms"]?.Errors.FirstOrDefault()?.ErrorMessage
+                                </span>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="bp-btn bp-btn-secondary bp-btn-prev-step">Back</button>
+                            <button type="submit" class="bp-btn bp-btn-primary px-4" id="submitAppBtn">
+                                <i class="fa-solid fa-paper-plane me-1"></i> Submit Official Application
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

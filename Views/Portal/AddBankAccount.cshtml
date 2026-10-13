@@ -1,0 +1,151 @@
+@model FinGuard.Models.BankAccountCreateViewModel
+
+@{
+    ViewData["Title"] = "Add Bank Account";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="BankAccounts" class="btn btn-sm btn-light border text-secondary px-3 py-1">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Accounts
+        </a>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">
+            Secure Enrollment
+        </span>
+    </div>
+
+    <!-- Header -->
+    <div class="mb-3">
+        <h1 class="fs-5 fw-bold text-dark mb-0">Link New Bank Account</h1>
+        <p class="text-secondary small mb-0">Enter verified bank details for institutional loan payouts</p>
+    </div>
+
+    <div class="bp-card p-3 p-md-4 border shadow-sm">
+        <form asp-action="AddBankAccount" method="post" id="addBankAccountForm">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2 small mb-3 rounded-3" role="alert"></div>
+
+            <!-- Bank Name -->
+            <div class="mb-3">
+                <label asp-for="BankName" class="form-label small fw-semibold text-secondary">Bank Name *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </span>
+                    <input asp-for="BankName" class="form-control border-start-0" placeholder="e.g. State Bank of India, HDFC Bank, ICICI Bank" required />
+                </div>
+                <span asp-validation-for="BankName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Account Holder Name -->
+            <div class="mb-3">
+                <label asp-for="AccountHolderName" class="form-label small fw-semibold text-secondary">Account Holder Name (as in passbook) *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input asp-for="AccountHolderName" class="form-control border-start-0" placeholder="e.g. Sudhanshu Kumar" required />
+                </div>
+                <span asp-validation-for="AccountHolderName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Account Number -->
+            <div class="mb-3">
+                <label asp-for="AccountNumber" class="form-label small fw-semibold text-secondary">Bank Account Number *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0">
+                        <i class="fa-solid fa-hashtag"></i>
+                    </span>
+                    <input asp-for="AccountNumber" type="password" id="accountNumberInput" class="form-control border-start-0 border-end-0 font-monospace" placeholder="9 to 18 digits" autocomplete="off" required />
+                    <button type="button" class="btn btn-outline-secondary border-start-0" onclick="toggleAccVisibility('accountNumberInput', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="AccountNumber" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Confirm Account Number -->
+            <div class="mb-3">
+                <label asp-for="ConfirmAccountNumber" class="form-label small fw-semibold text-secondary">Confirm Account Number *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input asp-for="ConfirmAccountNumber" type="password" id="confirmAccountNumberInput" class="form-control border-start-0 border-end-0 font-monospace" placeholder="Re-enter bank account number" autocomplete="off" required />
+                    <button type="button" class="btn btn-outline-secondary border-start-0" onclick="toggleAccVisibility('confirmAccountNumberInput', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="ConfirmAccountNumber" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- IFSC Code & Account Type -->
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-6">
+                    <label asp-for="IFSCCode" class="form-label small fw-semibold text-secondary">IFSC Code (11 Chars) *</label>
+                    <input asp-for="IFSCCode" class="form-control font-monospace text-uppercase" placeholder="e.g. SBIN0001234" maxlength="11" oninput="this.value = this.value.toUpperCase();" required />
+                    <span asp-validation-for="IFSCCode" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label asp-for="AccountType" class="form-label small fw-semibold text-secondary">Account Type *</label>
+                    <select asp-for="AccountType" class="form-select">
+                        <option value="Savings">Savings Account</option>
+                        <option value="Current">Current Account</option>
+                    </select>
+                    <span asp-validation-for="AccountType" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <!-- Branch Name (Optional) -->
+            <div class="mb-3">
+                <label asp-for="BranchName" class="form-label small fw-semibold text-secondary">Branch Name (Optional)</label>
+                <input asp-for="BranchName" class="form-control" placeholder="e.g. Connaught Place Branch" />
+                <span asp-validation-for="BranchName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Set as Primary -->
+            <div class="mb-4 form-check">
+                <input asp-for="SetAsPrimary" class="form-check-input" id="setAsPrimaryCheck" />
+                <label class="form-check-label small text-secondary" for="setAsPrimaryCheck">
+                    Set as primary account for future disbursements
+                </label>
+            </div>
+
+            <!-- Security Assurance -->
+            <div class="p-3 bg-light rounded-3 border mb-3 small text-muted" style="font-size: 0.74rem;">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                Newly added accounts start in <strong>Pending</strong> status and undergo automated or operational penny-drop validation before disbursement eligibility.
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                <a asp-action="BankAccounts" class="btn btn-sm btn-light border px-3 py-2">Cancel</a>
+                <button type="submit" class="bp-btn bp-btn-primary px-4 py-2 fs-6">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Bank Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleAccVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+}

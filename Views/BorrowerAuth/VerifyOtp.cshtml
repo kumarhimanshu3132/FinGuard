@@ -1,0 +1,255 @@
+@model FinGuard.Models.BorrowerVerifyOtpViewModel
+
+@{
+    ViewData["Title"] = "Verify Email Address";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="row justify-content-center py-4 py-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <div class="bp-card p-4 p-md-5">
+            <!-- Header & Badge -->
+            <div class="text-center mb-4">
+                <div class="bp-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.45rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                    <i class="fa-solid fa-envelope-circle-check" aria-hidden="true"></i>
+                </div>
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light border rounded-pill mb-2 small text-secondary fw-semibold">
+                    <i class="fa-solid fa-shield-halved text-indigo"></i> Account Verification
+                </div>
+                <h1 class="fs-4 fw-bold text-dark mb-1">Verify Your Email Address</h1>
+                <p class="text-secondary small mb-2">We sent a 6-digit verification code to:</p>
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light border rounded-pill text-dark fw-bold small">
+                    <i class="fa-regular fa-envelope text-indigo"></i>
+                    <span>@(Model?.Email ?? ViewBag.Email)</span>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-danger-subtle" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-1 flex-shrink-0 text-danger" aria-hidden="true"></i>
+                    <div>@ViewBag.Error</div>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-danger-subtle" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-1 flex-shrink-0 text-danger" aria-hidden="true"></i>
+                    <div>@TempData["Error"]</div>
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-success-subtle" role="alert">
+                    <i class="fa-solid fa-circle-check mt-1 flex-shrink-0 text-success" aria-hidden="true"></i>
+                    <div>@TempData["Success"]</div>
+                </div>
+            }
+
+            @if (TempData["DevOtp"] != null)
+            {
+                <div class="alert alert-warning d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-warning-subtle" role="alert">
+                    <i class="fa-solid fa-laptop-code mt-1 flex-shrink-0 text-warning" aria-hidden="true"></i>
+                    <div>
+                        <strong>Development Notice:</strong> Live SMTP not connected. Your verification code is:
+                        <span class="badge bg-dark fs-6 px-2 py-1 ms-1 tracking-wider font-monospace">@TempData["DevOtp"]</span>
+                    </div>
+                </div>
+            }
+
+            <!-- Verification Form -->
+            <form asp-action="VerifyOtp" method="post" id="verifyOtpForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Email" />
+                <input type="hidden" asp-for="Otp" id="hiddenOtpInput" />
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold text-secondary d-block text-center mb-3">
+                        Enter 6-Digit One-Time Password
+                    </label>
+
+                    <!-- 6 Digit Individual Input Boxes -->
+                    <div class="d-flex justify-content-between gap-2 px-1 mb-2" id="otpBoxContainer">
+                        @for (int i = 0; i < 6; i++)
+                        {
+                            <input type="text"
+                                   class="form-control text-center fw-bold fs-4 otp-digit-box p-0"
+                                   maxlength="1"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   autocomplete="off"
+                                   data-index="@i"
+                                   style="height: 54px; max-width: 54px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: 'Courier New', Courier, monospace;" />
+                        }
+                    </div>
+                    <span asp-validation-for="Otp" class="text-danger small mt-1 d-block text-center"></span>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="btnSubmitOtp" class="bp-btn bp-btn-primary w-100 py-2 fs-6">
+                        <i class="fa-solid fa-circle-check me-1" aria-hidden="true"></i> Verify & Complete Registration
+                    </button>
+                </div>
+            </form>
+
+            <!-- Resend OTP & Assistance -->
+            <div class="mt-4 pt-3 border-top text-center">
+                <div class="small text-secondary mb-2">Didn't receive the email?</div>
+                <div id="resendTimerContainer" class="small text-muted mb-2">
+                    <i class="fa-regular fa-clock me-1"></i> Resend code in <span id="timerSeconds" class="fw-bold text-dark">60</span>s
+                </div>
+
+                <form asp-action="ResendOtp" method="post" id="resendOtpForm" class="d-none">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="email" value="@(Model?.Email ?? ViewBag.Email)" />
+                    <button type="submit" id="btnResend" class="btn btn-link p-0 text-indigo fw-semibold small text-decoration-none">
+                        <i class="fa-solid fa-rotate-right me-1"></i> Resend Verification Code
+                    </button>
+                </form>
+
+                <div class="text-muted mt-3" style="font-size: 0.78rem;">
+                    <i class="fa-solid fa-circle-info text-secondary me-1"></i>
+                    The verification code is valid for 5 minutes. If you don't see it, please check your Spam or Junk folder.
+                </div>
+            </div>
+
+            <!-- Alternative Links -->
+            <div class="text-center small text-secondary pt-3 mt-3 border-top d-flex justify-content-between">
+                <a asp-action="Register" class="text-secondary text-decoration-none">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Change Email
+                </a>
+                <a asp-action="Login" class="fw-semibold text-indigo text-decoration-none">
+                    Back to Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const digitBoxes = Array.from(document.querySelectorAll('.otp-digit-box'));
+            const hiddenOtpInput = document.getElementById('hiddenOtpInput');
+            const verifyForm = document.getElementById('verifyOtpForm');
+            const submitBtn = document.getElementById('btnSubmitOtp');
+            const resendForm = document.getElementById('resendOtpForm');
+            const resendTimerContainer = document.getElementById('resendTimerContainer');
+            const timerSecondsSpan = document.getElementById('timerSeconds');
+
+            if (digitBoxes.length > 0) {
+                // Focus first input automatically
+                digitBoxes[0].focus();
+
+                function updateHiddenInput() {
+                    const otpValue = digitBoxes.map(b => b.value.trim()).join('');
+                    if (hiddenOtpInput) {
+                        hiddenOtpInput.value = otpValue;
+                    }
+                    return otpValue;
+                }
+
+                digitBoxes.forEach((box, index) => {
+                    // Handle digit typing
+                    box.addEventListener('input', function (e) {
+                        const val = this.value.replace(/[^0-9]/g, '');
+                        this.value = val ? val[val.length - 1] : '';
+
+                        if (this.value) {
+                            this.style.borderColor = '#4338ca';
+                            this.style.backgroundColor = '#eef2ff';
+                            if (index < digitBoxes.length - 1) {
+                                digitBoxes[index + 1].focus();
+                            }
+                        } else {
+                            this.style.borderColor = '#e2e8f0';
+                            this.style.backgroundColor = '#ffffff';
+                        }
+
+                        const currentOtp = updateHiddenInput();
+                        if (currentOtp.length === 6) {
+                            submitBtn.focus();
+                        }
+                    });
+
+                    // Handle Backspace & Arrow keys
+                    box.addEventListener('keydown', function (e) {
+                        if (e.key === 'Backspace') {
+                            if (!this.value && index > 0) {
+                                digitBoxes[index - 1].value = '';
+                                digitBoxes[index - 1].style.borderColor = '#e2e8f0';
+                                digitBoxes[index - 1].style.backgroundColor = '#ffffff';
+                                digitBoxes[index - 1].focus();
+                            } else {
+                                this.value = '';
+                                this.style.borderColor = '#e2e8f0';
+                                this.style.backgroundColor = '#ffffff';
+                            }
+                            updateHiddenInput();
+                        } else if (e.key === 'ArrowLeft' && index > 0) {
+                            digitBoxes[index - 1].focus();
+                        } else if (e.key === 'ArrowRight' && index < digitBoxes.length - 1) {
+                            digitBoxes[index + 1].focus();
+                        }
+                    });
+
+                    // Handle Paste (e.g. copying 6-digit code from email)
+                    box.addEventListener('paste', function (e) {
+                        e.preventDefault();
+                        const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                        if (pasteData) {
+                            const digits = pasteData.slice(0, 6).split('');
+                            digits.forEach((d, i) => {
+                                if (digitBoxes[i]) {
+                                    digitBoxes[i].value = d;
+                                    digitBoxes[i].style.borderColor = '#4338ca';
+                                    digitBoxes[i].style.backgroundColor = '#eef2ff';
+                                }
+                            });
+                            updateHiddenInput();
+                            const focusIdx = Math.min(digits.length, 5);
+                            digitBoxes[focusIdx].focus();
+                            if (digits.length === 6) {
+                                submitBtn.focus();
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Form Submit Loading State
+            if (verifyForm && submitBtn) {
+                verifyForm.addEventListener('submit', function (e) {
+                    const otpVal = updateHiddenInput();
+                    if (!otpVal || otpVal.length !== 6) {
+                        e.preventDefault();
+                        alert('Please enter all 6 digits of your verification OTP.');
+                        const emptyBox = digitBoxes.find(b => !b.value);
+                        if (emptyBox) emptyBox.focus();
+                        return;
+                    }
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Verifying...';
+                });
+            }
+
+            // Resend Cooldown Timer (60 seconds)
+            let countdown = 60;
+            const timerInterval = setInterval(function () {
+                countdown--;
+                if (timerSecondsSpan) {
+                    timerSecondsSpan.textContent = countdown;
+                }
+                if (countdown <= 0) {
+                    clearInterval(timerInterval);
+                    if (resendTimerContainer) resendTimerContainer.classList.add('d-none');
+                    if (resendForm) resendForm.classList.remove('d-none');
+                }
+            }, 1000);
+        });
+    </script>
+}

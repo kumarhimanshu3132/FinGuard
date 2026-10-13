@@ -1,104 +1,69 @@
 @model IEnumerable<FinGuard.Models.Loan>
 
 @{
-    ViewData["Title"] = "Active Loans";
+    ViewData["Title"] = "Loan Directory";
+    var totalLoans = Model != null ? Model.Count() : 0;
 }
 
-<style>
-    .page-header {
-        margin-bottom: 2.5rem;
-        margin-top: 1rem;
-    }
-
-    .header-title {
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.5px;
-    }
-
-    .btn-add {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        border: none;
-        box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.3);
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .btn-add:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 20px -4px rgba(99, 102, 241, 0.5);
-        color: white;
-    }
-
-    .custom-table {
-        margin-bottom: 0;
-        width: 100%;
-        color: var(--text-primary);
-    }
-
-    .custom-table th {
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--text-primary);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
-        padding: 1.2rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .custom-table td {
-        padding: 1.2rem 1.5rem;
-        vertical-align: middle;
-        color: var(--text-primary);
-        font-weight: 500;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .amount-text {
-        color: var(--success-color);
-        font-weight: 700;
-    }
-
-    .status-badge {
-        padding: 6px 12px;
-        border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        background: rgba(16, 185, 129, 0.2);
-        color: var(--success-color);
-    }
-
-    .empty-state {
-        padding: 4rem 2rem;
-        text-align: center;
-    }
-</style>
-
-<div class="page-header d-flex justify-content-between align-items-center" style="max-width: 1000px; margin: 1rem auto 2.5rem;">
-    <h2 class="header-title mb-0" style="color: var(--text-primary);">Loan Directory</h2>
-    <a href="/Loan/Create" class="btn-add">+ Issue New Loan</a>
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-file-invoice-dollar text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Loan Directory
+            <span class="fg-count-badge">@totalLoans Loans</span>
+        </h1>
+        <p class="fg-page-subtitle">Disbursed loan ledger, active tenures, EMI schedules, and recovery tracking.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Create" class="fg-btn fg-btn-primary fg-btn-sm">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span>Issue New Loan</span>
+        </a>
+    </div>
 </div>
 
-<div class="fg-card" style="max-width: 1000px; margin: 0 auto; padding: 0; overflow: hidden;">
-    <div class="table-responsive">
-        <table class="custom-table">
+@if (TempData["Success"] != null)
+{
+    <div id="loanAlertSuccess" class="fg-alert fg-alert-success" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
+    </div>
+}
+
+<!-- Table Card with Search & Filters -->
+<div class="fg-card fg-card-flush">
+    <!-- Filter & Search Bar -->
+    <div class="fg-filter-bar">
+        <div class="fg-search-input-group">
+            <i class="fa-solid fa-magnifying-glass fg-search-icon" aria-hidden="true"></i>
+            <input type="text" id="loanSearchInput" class="fg-search-input"
+                   placeholder="Search by Loan ID or Customer ID..." aria-label="Search loans" />
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <select id="loanStatusFilter" class="fg-filter-select" aria-label="Filter by Loan Status">
+                <option value="">All Loan Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Closed">Closed</option>
+                <option value="Defaulter">Defaulter</option>
+                <option value="Pending">Pending</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="fg-table-responsive">
+        <table class="fg-table">
             <thead>
                 <tr>
-                    <th class="text-light">Loan ID</th>
-                    <th class="text-light">Customer ID</th>
-                    <th class="text-light">Principal</th>
-                    <th class="text-light">Tenure</th>
-                    <th class="text-light">Monthly EMI</th>
-                    <th class="text-light">Status</th>
+                    <th scope="col" style="width: 110px;">Loan ID</th>
+                    <th scope="col" style="width: 130px;">Customer ID</th>
+                    <th scope="col" class="text-end">Principal Amount</th>
+                    <th scope="col" class="text-center">Interest</th>
+                    <th scope="col" class="text-center">Tenure</th>
+                    <th scope="col" class="text-end">Monthly EMI</th>
+                    <th scope="col" class="text-end">Remaining Balance</th>
+                    <th scope="col" class="text-center" style="width: 120px;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -106,14 +71,85 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
-                            <td class="text-light opacity-75">#@item.LoanId</td>
-                            <td class="fw-bold text-light">#@item.CustomerId</td>
-                            <td class="amount-text">₹@item.PrincipalAmount</td>
-                            <td class="text-light">@item.TenureMonths Mos</td>
-                            <td class="fw-bold" style="color: var(--accent-secondary);">₹@item.EMIAmount</td>
+                        <tr class="loan-row"
+                            data-search="@item.LoanId @item.CustomerId"
+                            data-status="@item.Status">
                             <td>
-                                <span class="status-badge">@item.Status</span>
+                                <span class="fg-row-id">#@item.LoanId</span>
+                            </td>
+                            <td>
+                                <a asp-controller="Customer" asp-action="Edit" asp-route-id="@item.CustomerId"
+                                   class="fw-semibold text-primary" title="View customer profile">
+                                    #@item.CustomerId
+                                </a>
+                            </td>
+                            <td class="text-end num-tabular fw-semibold text-dark">
+                                ₹@item.PrincipalAmount.ToString("N2")
+                            </td>
+                            <td class="text-center num-tabular text-secondary">
+                                @item.InterestRate% p.a.
+                            </td>
+                            <td class="text-center num-tabular text-secondary">
+                                @item.TenureMonths Mos
+                            </td>
+                            <td class="text-end num-tabular fw-semibold" style="color: var(--fg-primary);">
+                                ₹@item.EMIAmount.ToString("N2")
+                            </td>
+                            <td class="text-end num-tabular fw-semibold"
+                                style="color: @(item.RemainingBalance > 0 ? "var(--fg-danger)" : "var(--fg-success)");">
+                                ₹@item.RemainingBalance.ToString("N2")
+                            </td>
+                            <td class="text-center">
+                                @if (item.Status == "Active")
+                                {
+                                    <span class="fg-badge fg-badge-success">
+                                        <span class="fg-badge-dot"></span>
+                                        Active
+                                    </span>
+                                }
+                                else if (item.Status == "Closed")
+                                {
+                                    <span class="fg-badge fg-badge-neutral">
+                                        <span class="fg-badge-dot"></span>
+                                        Closed
+                                    </span>
+                                }
+                                else if (item.Status == "Defaulter")
+                                {
+                                    <span class="fg-badge fg-badge-danger">
+                                        <span class="fg-badge-dot"></span>
+                                        Defaulter
+                                    </span>
+                                }
+                                else if (item.Status == "Pending")
+                                {
+                                    <div class="d-flex flex-column align-items-center gap-1">
+                                        <span class="fg-badge fg-badge-warning">
+                                            <span class="fg-badge-dot"></span>
+                                            Pending
+                                        </span>
+                                        <form asp-action="Approve" asp-route-id="@item.LoanId" method="post" class="m-0 p-0">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold" style="font-size: 0.72rem;" title="Approve for disbursement">
+                                                <i class="fa-solid fa-check me-1"></i> Approve
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else if (item.Status == "Approved")
+                                {
+                                    <span class="fg-badge fg-badge-success">
+                                        <span class="fg-badge-dot"></span>
+                                        Approved (@item.DisbursementStatus)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="fg-badge fg-badge-neutral">
+                                        <span class="fg-badge-dot"></span>
+                                        @item.Status
+                                    </span>
+                                }
                             </td>
                         </tr>
                     }
@@ -121,9 +157,18 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" class="empty-state">
-                            <h5 class="fw-bold text-light">No active loans</h5>
-                            <p class="text-light opacity-75 mb-0">Click "+ Issue New Loan" to process an application.</p>
+                        <td colspan="8" class="p-0">
+                            <div class="fg-empty-state">
+                                <div class="fg-empty-icon">
+                                    <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="fg-empty-title">No Loans Found</h3>
+                                <p class="fg-empty-desc">There are no loans issued in the system. Issue a new microfinance loan to an eligible customer.</p>
+                                <a asp-action="Create" class="fg-btn fg-btn-primary fg-btn-sm">
+                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    <span>Issue New Loan</span>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -131,3 +176,44 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const searchInput = document.getElementById('loanSearchInput');
+            const statusFilter = document.getElementById('loanStatusFilter');
+            const rows = document.querySelectorAll('.loan-row');
+
+            function applyFilters() {
+                const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+                const statusVal = statusFilter ? statusFilter.value : '';
+
+                rows.forEach(row => {
+                    const searchData = row.getAttribute('data-search') || '';
+                    const rowStatus = row.getAttribute('data-status') || '';
+
+                    const matchesQuery = !query || searchData.includes(query);
+                    const matchesStatus = !statusVal || rowStatus === statusVal;
+
+                    if (matchesQuery && matchesStatus) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchInput) searchInput.addEventListener('input', applyFilters);
+            if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+
+            const alertSuccess = document.getElementById('loanAlertSuccess');
+            if (alertSuccess) {
+                setTimeout(() => {
+                    alertSuccess.style.transition = 'opacity 400ms ease';
+                    alertSuccess.style.opacity = '0';
+                    setTimeout(() => alertSuccess.remove(), 400);
+                }, 4000);
+            }
+        })();
+    </script>
+}

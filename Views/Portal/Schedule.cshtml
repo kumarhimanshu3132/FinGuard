@@ -1,0 +1,220 @@
+@model List<FinGuard.Models.EmiScheduleItemViewModel>
+
+@{
+    ViewData["Title"] = "Instalment Details - FinGuard";
+    Layout = "_BorrowerLayout";
+    var activeLoans = ViewBag.ActiveLoans as List<FinGuard.Models.Loan> ?? new();
+    var selectedLoan = ViewBag.SelectedLoan as FinGuard.Models.Loan;
+    int paidCount = ViewBag.PaidCount != null ? (int)ViewBag.PaidCount : Model.Count(m => m.Status == "Paid");
+    int totalCount = Model.Count;
+    decimal foreclosureAmount = ViewBag.ForeclosureAmount != null ? (decimal)ViewBag.ForeclosureAmount : (selectedLoan?.RemainingBalance ?? 0);
+    decimal foreclosureSavings = ViewBag.ForeclosureSavings != null ? (decimal)ViewBag.ForeclosureSavings : 0;
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        @if (selectedLoan != null)
+        {
+            <a asp-action="LoanDetails" asp-route-id="@selectedLoan.LoanId" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Loan Details
+            </a>
+        }
+        else
+        {
+            <a asp-action="Dashboard" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+        }
+
+        @if (activeLoans.Count > 1)
+        {
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle px-3 py-1" type="button" data-bs-toggle="dropdown">
+                    Loan #@(selectedLoan?.LoanId ?? 0)
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    @foreach (var l in activeLoans)
+                    {
+                        <li>
+                            <a class="dropdown-item small" asp-action="Schedule" asp-route-loanId="@l.LoanId">
+                                Loan Account #@l.LoanId (₹@l.PrincipalAmount:N0)
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <!-- Header & Subtitle (Image 3 reference) -->
+    <div class="mb-3">
+        <h1 class="fs-5 fw-bold text-dark mb-0">Details of Instalment</h1>
+        <div class="text-secondary small fw-medium">
+            Instalment paid till date: <strong class="text-dark">@paidCount/@totalCount</strong>
+        </div>
+    </div>
+
+    @if (selectedLoan != null && Model.Any())
+    {
+        <!-- List of Mobile Installment Cards (Image 3 reference) -->
+        <div class="d-flex flex-column gap-2 mb-5 pb-4">
+            @foreach (var item in Model)
+            {
+                <div class="bp-installment-card @(item.Status == "Paid" ? "paid" : "upcoming")">
+                    <div class="bp-installment-header">
+                        <div class="fw-bold text-dark">
+                            @(item.InstallmentNumber)@(item.InstallmentNumber == 1 ? "st" : item.InstallmentNumber == 2 ? "nd" : item.InstallmentNumber == 3 ? "rd" : "th") Instalment
+                        </div>
+
+                        @if (item.Status == "Paid")
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+                                <i class="fa-solid fa-circle-check me-1"></i> Paid
+                            </span>
+                        }
+                        else if (item.Status == "Due")
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i> Due Now
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">
+                                <i class="fa-regular fa-clock me-1"></i> Upcoming
+                            </span>
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-baseline justify-content-between mb-1">
+                        <div class="text-secondary small">Prepayment / EMI Amount</div>
+                        <div class="fs-5 fw-bold text-dark num-tabular">₹@item.EmiAmount.ToString("N2")</div>
+                    </div>
+
+                    <div class="bp-installment-due">
+                        Due On: <strong class="text-dark">@item.DueDate.ToString("dd MMM, yyyy")</strong>
+                        @if (item.Status != "Paid")
+                        {
+                            var daysLeft = (item.DueDate.Date - DateTime.UtcNow.Date).Days;
+                            <span class="text-muted ms-1">(@(daysLeft > 0 ? $"In {daysLeft} days" : "Today"))</span>
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <span class="bp-tag-discount">
+                            <i class="fa-solid fa-percent" style="font-size: 0.65rem;"></i> Prepayment Discount Applied
+                        </span>
+                        <div class="text-muted" style="font-size: 0.72rem;">
+                            Bal: ₹@item.RemainingBalanceAfter.ToString("N0")
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sticky Bottom Bar (Image 3 reference) -->
+        <div class="bp-sticky-bar no-print">
+            <div class="bp-sticky-bar-inner">
+                <div>
+                    <div class="bp-sticky-amount">₹@selectedLoan.EMIAmount.ToString("N2")</div>
+                    <button type="button" class="btn btn-link p-0 text-indigo fw-bold text-decoration-none" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#scheduleBreakupModal">
+                        View Breakup <i class="fa-solid fa-chevron-up" style="font-size: 0.65rem;"></i>
+                    </button>
+                </div>
+                <a asp-action="PayEmi" asp-route-loanId="@selectedLoan.LoanId" class="bp-btn-sticky-primary">
+                    <i class="fa-solid fa-bolt me-1"></i> Pay EMI (Razorpay)
+                </a>
+            </div>
+        </div>
+
+        <!-- Breakup Modal -->
+        <div class="modal fade" id="scheduleBreakupModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom py-3">
+                        <h6 class="modal-title fw-bold text-dark mb-0">Installment Breakup</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-3 small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Principal:</span>
+                            <span class="fw-bold text-dark">₹@((selectedLoan.EMIAmount * 0.75m).ToString("N2"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Interest (12% p.a.):</span>
+                            <span class="fw-bold text-dark">₹@((selectedLoan.EMIAmount * 0.25m).ToString("N2"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Prepayment Savings:</span>
+                            <span class="fw-bold text-success">₹@foreclosureSavings.ToString("N2")</span>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total Due:</span>
+                            <span class="text-indigo">₹@selectedLoan.EMIAmount.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pay Modal -->
+        <div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom py-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0">
+                            <i class="fa-solid fa-shield-halved text-success me-2"></i> Confirm Payment
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form asp-action="ProcessPayment" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="loanId" value="@selectedLoan.LoanId" />
+                        <input type="hidden" name="amount" value="@selectedLoan.EMIAmount" />
+                        
+                        <div class="modal-body p-4">
+                            <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                                <div class="small text-secondary fw-semibold">Next Installment Due</div>
+                                <div class="fs-2 fw-bold text-dark">₹@selectedLoan.EMIAmount.ToString("N2")</div>
+                                <div class="text-muted small">Due date: @selectedLoan.NextDueDate.ToString("dd MMM yyyy")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary">Payment Method</label>
+                                <div class="d-flex flex-column gap-2">
+                                    <label class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 bg-white">
+                                        <input type="radio" name="paymentMethod" value="UPI" checked />
+                                        <i class="fa-brands fa-google-pay text-primary fs-5"></i>
+                                        <span class="fw-semibold small text-dark">UPI (GPay, PhonePe, Paytm)</span>
+                                    </label>
+                                    <label class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 bg-white">
+                                        <input type="radio" name="paymentMethod" value="NetBanking" />
+                                        <i class="fa-solid fa-building-columns text-secondary"></i>
+                                        <span class="fw-semibold small text-dark">Net Banking</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top py-3">
+                            <button type="button" class="btn btn-light rounded-pill px-3 py-1 small" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="bp-btn bp-btn-primary rounded-pill px-4 py-2 small">
+                                Proceed with Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="bp-card p-5 text-center my-3">
+            <div class="bp-kpi-icon indigo mx-auto mb-2"><i class="fa-solid fa-calendar-xmark"></i></div>
+            <h2 class="fs-6 fw-bold text-dark mb-1">No Active EMI Schedule</h2>
+            <p class="text-secondary small mb-3">You do not have any running installments right now.</p>
+            <a asp-action="Loans" class="btn btn-sm btn-primary rounded-pill px-3 py-1">View All Facilities</a>
+        </div>
+    }
+</div>

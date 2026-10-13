@@ -1,0 +1,154 @@
+@model List<FinGuard.Models.Loan>
+
+@{
+    ViewData["Title"] = "My Loans - FinGuard";
+    Layout = "_BorrowerLayout";
+    string activeTab = ViewBag.ActiveTab as string ?? "active";
+
+    int activeCount = Model.Count(l => l.Status == "Active");
+    int closedCount = Model.Count(l => l.Status == "Closed");
+    int pendingCount = Model.Count(l => l.Status == "Pending");
+    int allCount = Model.Count;
+
+    var filteredLoans = activeTab switch
+    {
+        "active" => Model.Where(l => l.Status == "Active").ToList(),
+        "closed" => Model.Where(l => l.Status == "Closed").ToList(),
+        "pending" => Model.Where(l => l.Status == "Pending").ToList(),
+        _ => Model
+    };
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Filter Tabs (Image 5 reference) -->
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 gap-2 overflow-x-auto no-scrollbar" style="white-space: nowrap;">
+        <a asp-action="Loans" asp-route-tab="active"
+           class="btn btn-sm rounded-pill px-3 py-1 fw-bold @(activeTab == "active" ? "btn-primary" : "btn-light border text-secondary")"
+           style="font-size: 0.8rem;">
+            Active (@activeCount)
+        </a>
+        <a asp-action="Loans" asp-route-tab="closed"
+           class="btn btn-sm rounded-pill px-3 py-1 fw-bold @(activeTab == "closed" ? "btn-primary" : "btn-light border text-secondary")"
+           style="font-size: 0.8rem;">
+            Closed (@closedCount)
+        </a>
+        <a asp-action="Loans" asp-route-tab="pending"
+           class="btn btn-sm rounded-pill px-3 py-1 fw-bold @(activeTab == "pending" ? "btn-primary" : "btn-light border text-secondary")"
+           style="font-size: 0.8rem;">
+            Requests (@pendingCount)
+        </a>
+        <a asp-action="Loans" asp-route-tab="all"
+           class="btn btn-sm rounded-pill px-3 py-1 fw-bold @(activeTab == "all" ? "btn-primary" : "btn-light border text-secondary")"
+           style="font-size: 0.8rem;">
+            All (@allCount)
+        </a>
+    </div>
+
+    <!-- Filter Meta Bar -->
+    <div class="d-flex align-items-center justify-content-between text-secondary small mb-3 px-1">
+        <div class="d-flex align-items-center gap-1">
+            <i class="fa-solid fa-arrow-down-wide-short" style="font-size: 0.75rem;"></i>
+            <span style="font-size: 0.75rem;">Tap card to view repayment schedule & sanction letter</span>
+        </div>
+        <a asp-action="Apply" class="text-indigo fw-bold text-decoration-none small">
+            <i class="fa-solid fa-plus me-1"></i> Apply
+        </a>
+    </div>
+
+    <!-- Vertical Stack of Mobile Loan Cards (Image 5 reference) -->
+    @if (filteredLoans.Any())
+    {
+        <div class="d-flex flex-column gap-2 mb-4">
+            @foreach (var loan in filteredLoans)
+            {
+                <a asp-action="LoanDetails" asp-route-id="@loan.LoanId" class="bp-loan-card">
+                    <div class="bp-loan-card-header">
+                        @if (loan.Status == "Closed")
+                        {
+                            <div class="text-success d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Settled & Closed</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border">#LN-@loan.LoanId</span>
+                        }
+                        else if (loan.Status == "Active")
+                        {
+                            <div class="text-warning d-flex align-items-center gap-2">
+                                <i class="fa-regular fa-clock"></i>
+                                <span>Active • Due @loan.NextDueDate.ToString("dd MMM yyyy")</span>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                        }
+                        else if (loan.Status == "Pending")
+                        {
+                            <div class="text-primary d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                                <span>Under Officer Review</span>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span>
+                        }
+                        else
+                        {
+                            <div class="text-secondary d-flex align-items-center gap-2">
+                                <span>@loan.Status</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border">#LN-@loan.LoanId</span>
+                        }
+                    </div>
+
+                    <div class="bp-loan-card-body">
+                        <div class="bp-loan-card-col">
+                            @if (loan.Status == "Closed")
+                            {
+                                <div class="text-muted" style="font-size: 0.72rem;">Total Amount Paid</div>
+                                <div class="bp-loan-amount-highlight text-success">₹@loan.PrincipalAmount.ToString("N2")</div>
+                            }
+                            else
+                            {
+                                <div class="text-muted" style="font-size: 0.72rem;">Outstanding Balance</div>
+                                <div class="bp-loan-amount-highlight text-dark">₹@loan.RemainingBalance.ToString("N2")</div>
+                            }
+
+                            <div class="text-muted mt-1" style="font-size: 0.72rem;">Sanctioned Principal</div>
+                            <div class="fw-semibold text-secondary small">₹@loan.PrincipalAmount.ToString("N2")</div>
+                        </div>
+
+                        <div class="bp-loan-card-col right">
+                            <div>Loan Type</div>
+                            <div class="fw-bold text-dark">Quick Pay Micro Credit</div>
+
+                            <div class="mt-2">Tenure</div>
+                            <div class="fw-semibold text-dark">@loan.TenureMonths Months (₹@loan.EMIAmount:N2/mo)</div>
+
+                            <div class="mt-2 text-indigo fw-semibold">
+                                View Details <i class="fa-solid fa-chevron-right ms-1" style="font-size: 0.65rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="bp-card p-5 text-center my-3">
+            <div class="bp-kpi-icon indigo mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h2 class="fs-6 fw-bold text-dark mb-1">No Loans in '@activeTab.ToUpper()'</h2>
+            <p class="text-secondary small mb-3">You have no facilities matching this category at this time.</p>
+            @if (activeTab != "active")
+            {
+                <a asp-action="Loans" asp-route-tab="active" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1">
+                    View Active Loans
+                </a>
+            }
+            else
+            {
+                <a asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm d-inline-flex">
+                    <i class="fa-solid fa-plus me-1"></i> Apply for Micro Credit
+                </a>
+            }
+        </div>
+    }
+</div>

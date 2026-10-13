@@ -91,6 +91,71 @@ namespace FinGuard.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FinGuard.Models.BankAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountHolderName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BranchName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EncryptedAccountNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IFSCCode")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MaskedAccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("BankAccounts");
+                });
+
             modelBuilder.Entity("FinGuard.Models.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
@@ -164,6 +229,10 @@ namespace FinGuard.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DisbursementStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<decimal>("EMIAmount")
                         .HasColumnType("numeric");
 
@@ -193,6 +262,139 @@ namespace FinGuard.Migrations
                     b.ToTable("Loans");
                 });
 
+            modelBuilder.Entity("FinGuard.Models.LoanDisbursement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BankAccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Deductions")
+                        .HasColumnType("numeric");
+
+                    b.Property<bool>("IsSimulated")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LoanId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("NetDisbursedAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("PaymentMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("PrincipalAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TransactionReference")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankAccountId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("LoanId");
+
+                    b.HasIndex("TransactionReference")
+                        .IsUnique();
+
+                    b.ToTable("LoanDisbursements");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.RazorpayOrderRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("AmountInPaise")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsTestMode")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LoanId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RazorpayOrderId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RazorpayPaymentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Receipt")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("LoanId");
+
+                    b.HasIndex("RazorpayOrderId")
+                        .IsUnique();
+
+                    b.ToTable("RazorpayOrders");
+                });
+
             modelBuilder.Entity("FinGuard.Models.Repayment", b =>
                 {
                     b.Property<int>("RepaymentId")
@@ -202,11 +404,19 @@ namespace FinGuard.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RepaymentId"));
 
                     b.Property<decimal>("AmountPaid")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("CollectedBy")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("IsTestMode")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LoanId")
                         .HasColumnType("integer");
@@ -214,9 +424,47 @@ namespace FinGuard.Migrations
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("RazorpayOrderId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RazorpayPaymentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RazorpaySignature")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.HasKey("RepaymentId");
 
+                    b.HasIndex("LoanId");
+
+                    b.HasIndex("RazorpayOrderId");
+
+                    b.HasIndex("RazorpayPaymentId");
+
                     b.ToTable("Repayments");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.BankAccount", b =>
+                {
+                    b.HasOne("FinGuard.Models.Customer", "Customer")
+                        .WithMany("BankAccounts")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("FinGuard.Models.Loan", b =>
@@ -228,9 +476,80 @@ namespace FinGuard.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FinGuard.Models.LoanDisbursement", b =>
+                {
+                    b.HasOne("FinGuard.Models.BankAccount", "BankAccount")
+                        .WithMany("Disbursements")
+                        .HasForeignKey("BankAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FinGuard.Models.Customer", "Customer")
+                        .WithMany("LoanDisbursements")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FinGuard.Models.Loan", "Loan")
+                        .WithMany("Disbursements")
+                        .HasForeignKey("LoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BankAccount");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Loan");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.RazorpayOrderRecord", b =>
+                {
+                    b.HasOne("FinGuard.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FinGuard.Models.Loan", "Loan")
+                        .WithMany()
+                        .HasForeignKey("LoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Loan");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.Repayment", b =>
+                {
+                    b.HasOne("FinGuard.Models.Loan", "Loan")
+                        .WithMany()
+                        .HasForeignKey("LoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Loan");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.BankAccount", b =>
+                {
+                    b.Navigation("Disbursements");
+                });
+
             modelBuilder.Entity("FinGuard.Models.Customer", b =>
                 {
+                    b.Navigation("BankAccounts");
+
+                    b.Navigation("LoanDisbursements");
+
                     b.Navigation("Loans");
+                });
+
+            modelBuilder.Entity("FinGuard.Models.Loan", b =>
+                {
+                    b.Navigation("Disbursements");
                 });
 #pragma warning restore 612, 618
         }

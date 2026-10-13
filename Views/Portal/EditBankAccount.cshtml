@@ -1,0 +1,121 @@
+@model FinGuard.Models.BankAccountEditViewModel
+
+@{
+    ViewData["Title"] = "Edit Bank Account";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="BankAccounts" class="btn btn-sm btn-light border text-secondary px-3 py-1">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Accounts
+        </a>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">
+            Account #@Model.Id
+        </span>
+    </div>
+
+    <!-- Header -->
+    <div class="mb-3">
+        <h1 class="fs-5 fw-bold text-dark mb-0">Modify Account Details</h1>
+        <p class="text-secondary small mb-0">Update bank records. Modifying sensitive fields resets verification status.</p>
+    </div>
+
+    <div class="bp-card p-3 p-md-4 border shadow-sm">
+        <form asp-action="EditBankAccount" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CurrentMaskedNumber" />
+            <input type="hidden" asp-for="VerificationStatus" />
+            <input type="hidden" asp-for="IsPrimary" />
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2 small mb-3 rounded-3" role="alert"></div>
+
+            <!-- Current Masked Display -->
+            <div class="p-3 bg-light rounded-3 border mb-3">
+                <span class="text-secondary small d-block">Currently Registered Account:</span>
+                <span class="fs-6 fw-bold text-dark font-monospace">@Model.CurrentMaskedNumber</span>
+                <span class="badge @(Model.VerificationStatus == "Verified" ? "bg-success" : "bg-warning text-dark") ms-2 rounded-pill small">
+                    @Model.VerificationStatus
+                </span>
+            </div>
+
+            <!-- Bank Name -->
+            <div class="mb-3">
+                <label asp-for="BankName" class="form-label small fw-semibold text-secondary">Bank Name *</label>
+                <input asp-for="BankName" class="form-control" required />
+                <span asp-validation-for="BankName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Account Holder Name -->
+            <div class="mb-3">
+                <label asp-for="AccountHolderName" class="form-label small fw-semibold text-secondary">Account Holder Name *</label>
+                <input asp-for="AccountHolderName" class="form-control" required />
+                <span asp-validation-for="AccountHolderName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- IFSC Code & Account Type -->
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-6">
+                    <label asp-for="IFSCCode" class="form-label small fw-semibold text-secondary">IFSC Code *</label>
+                    <input asp-for="IFSCCode" class="form-control font-monospace text-uppercase" maxlength="11" oninput="this.value = this.value.toUpperCase();" required />
+                    <span asp-validation-for="IFSCCode" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label asp-for="AccountType" class="form-label small fw-semibold text-secondary">Account Type *</label>
+                    <select asp-for="AccountType" class="form-select">
+                        <option value="Savings">Savings Account</option>
+                        <option value="Current">Current Account</option>
+                    </select>
+                    <span asp-validation-for="AccountType" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <!-- Branch Name -->
+            <div class="mb-3">
+                <label asp-for="BranchName" class="form-label small fw-semibold text-secondary">Branch Name</label>
+                <input asp-for="BranchName" class="form-control" />
+                <span asp-validation-for="BranchName" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <!-- Optional: Update Account Number -->
+            <div class="p-3 rounded-3 border bg-light-subtle mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-semibold text-dark small">Change Account Number (Optional)</span>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Leave blank to keep existing</span>
+                </div>
+
+                <div class="mb-2">
+                    <label asp-for="AccountNumber" class="form-label small text-secondary">New Account Number</label>
+                    <input asp-for="AccountNumber" type="password" class="form-control form-control-sm font-monospace" placeholder="Enter only if changing" autocomplete="off" />
+                    <span asp-validation-for="AccountNumber" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="ConfirmAccountNumber" class="form-label small text-secondary">Confirm New Account Number</label>
+                    <input asp-for="ConfirmAccountNumber" type="password" class="form-control form-control-sm font-monospace" placeholder="Re-enter to confirm" autocomplete="off" />
+                    <span asp-validation-for="ConfirmAccountNumber" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <!-- Advisory -->
+            <div class="alert alert-warning small p-2 rounded-3 mb-3 border-warning-subtle" style="font-size: 0.74rem;">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                Modifying the account number or IFSC code resets verification status to <strong>Pending</strong>.
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                <a asp-action="BankAccounts" class="btn btn-sm btn-light border px-3 py-2">Cancel</a>
+                <button type="submit" class="bp-btn bp-btn-primary px-4 py-2 fs-6">
+                    <i class="fa-solid fa-check me-1"></i> Update Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

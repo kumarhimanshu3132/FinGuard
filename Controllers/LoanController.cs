@@ -114,5 +114,39 @@ namespace FinGuard.Controllers
             ViewBag.Customers = new SelectList(customers, "CustomerId", "Name");
             return View(loan);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Approve(int id)
+        {
+            var loan = await _context.Loans.FindAsync(id);
+            if (loan == null)
+            {
+                TempData["Error"] = "Loan application not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (loan.Status == "Pending")
+            {
+                loan.Status = "Approved";
+                loan.DisbursementStatus = "Undisbursed";
+
+                var customer = await _context.Customers.FindAsync(loan.CustomerId);
+                if (customer != null && customer.CreditStatus != "Active")
+                {
+                    customer.CreditStatus = "Active";
+                    _context.Customers.Update(customer);
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Loan Application #{loan.LoanId} approved successfully and queued for borrower disbursement!";
+            }
+            else
+            {
+                TempData["Info"] = $"Loan #{loan.LoanId} is already in '{loan.Status}' status.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

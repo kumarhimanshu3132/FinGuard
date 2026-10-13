@@ -1,0 +1,385 @@
+@model FinGuard.Models.LoanDetailsViewModel
+
+@{
+    ViewData["Title"] = $"Loan Details #{Model.Loan.LoanId} - FinGuard";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Loans" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Loans
+        </a>
+        <span class="badge bg-light text-dark border px-3 py-1 rounded-pill small">
+            ID: #LN-@Model.Loan.LoanId
+        </span>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 p-3 mb-3 rounded-4 small border-success-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check text-success fs-6" aria-hidden="true"></i>
+            <div>@TempData["Success"]</div>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 p-3 mb-3 rounded-4 small border-danger-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation text-danger fs-6" aria-hidden="true"></i>
+            <div>@TempData["Error"]</div>
+        </div>
+    }
+
+    <!-- Top Due Notification Banner (Image 2 reference) -->
+    @if (Model.Loan.Status == "Active" && Model.Loan.RemainingBalance > 0)
+    {
+        <div class="p-2 px-3 bg-warning-subtle text-warning-emphasis rounded-3 border border-warning-subtle mb-3 d-flex align-items-center gap-2 small fw-semibold">
+            <i class="fa-regular fa-clock text-warning"></i>
+            <span>Upcoming installment due on @Model.Loan.NextDueDate.ToString("MMM dd, yyyy")</span>
+        </div>
+    }
+
+    <!-- 1. Foreclosure & Loan Metrics Card (Image 2 reference) -->
+    <div class="bp-foreclosure-card">
+        <div class="bp-foreclosure-top">
+            <div class="bp-foreclosure-icon">
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div>
+                <div class="small text-secondary fw-medium">
+                    Foreclosure Amount <i class="fa-solid fa-circle-info text-muted ms-1" style="font-size: 0.72rem;" title="Amount required to settle loan today without early exit penalties"></i>
+                </div>
+                <div class="bp-foreclosure-val">
+                    ₹@Model.ForeclosureAmount.ToString("N2")
+                </div>
+                @if (Model.ForeclosureSavings > 0)
+                {
+                    <div class="bp-pill-save mt-1">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <span>You save ₹@Model.ForeclosureSavings.ToString("N2") on interest</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="bp-dashed-divider"></div>
+
+        <!-- 4-Item Metrics Grid (Image 2 reference) -->
+        <div class="bp-detail-metrics-grid">
+            <div class="bp-metric-item">
+                <div class="label">Loan Amount <i class="fa-solid fa-circle-info text-muted ms-1" style="font-size: 0.65rem;"></i></div>
+                <div class="val">₹@Model.Loan.PrincipalAmount.ToString("N2")</div>
+            </div>
+
+            <div class="bp-metric-item">
+                <div class="label">Current Due Amount</div>
+                <div class="val text-indigo">₹@Model.Loan.EMIAmount.ToString("N2")</div>
+            </div>
+
+            <div class="bp-metric-item">
+                <div class="label">Pending Instalments</div>
+                <div class="val">@Model.PendingInstallmentsCount of @Model.Loan.TenureMonths</div>
+            </div>
+
+            <div class="bp-metric-item">
+                <div class="label">Loan ID</div>
+                <div class="val font-monospace">LN-@Model.Loan.LoanId</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Action Navigation Tiles (Image 2 reference) -->
+    <a asp-action="Schedule" asp-route-loanId="@Model.Loan.LoanId" class="bp-action-tile">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bp-explore-icon" style="width: 38px; height: 38px; font-size: 1rem; margin: 0; color: #1e3a8a;">
+                <i class="fa-solid fa-calendar-days"></i>
+            </div>
+            <div>
+                <div class="fw-bold text-dark">View Instalment Details</div>
+                <div class="text-secondary small fw-normal">Installments paid: @Model.PaidInstallmentsCount of @Model.Loan.TenureMonths</div>
+            </div>
+        </div>
+        <i class="fa-solid fa-chevron-right text-secondary" style="font-size: 0.85rem;"></i>
+    </a>
+
+    <button type="button" class="bp-action-tile w-100 text-start border-0" data-bs-toggle="modal" data-bs-target="#loanDocsModal">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bp-explore-icon" style="width: 38px; height: 38px; font-size: 1rem; margin: 0; color: #059669;">
+                <i class="fa-solid fa-file-contract"></i>
+            </div>
+            <div>
+                <div class="fw-bold text-dark">Loan Documents</div>
+                <div class="text-secondary small fw-normal">Key Fact Statement, Sanction Letter & Agreement</div>
+            </div>
+        </div>
+        <i class="fa-solid fa-chevron-right text-secondary" style="font-size: 0.85rem;"></i>
+    </button>
+
+    <!-- 3. Recent Payment Receipts for this Loan -->
+    <div class="bp-card p-3 mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">Verified Receipts</span>
+            <span class="text-muted small">@Model.Repayments.Count Receipts</span>
+        </div>
+
+        @if (Model.Repayments.Any())
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var rep in Model.Repayments)
+                {
+                    <div class="p-2 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                        <div>
+                            <span class="fw-bold text-dark">#REC-@rep.RepaymentId</span>
+                            <span class="text-muted ms-2" style="font-size: 0.72rem;">@rep.PaymentDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold text-success">₹@rep.AmountPaid.ToString("N2")</span>
+                            <a asp-action="Receipt" asp-route-id="@rep.RepaymentId" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-3 text-muted small">
+                No installment payments logged for this loan yet.
+            </div>
+        }
+    </div>
+</div>
+
+<!-- 4. Sticky Bottom Action Bar (Image 2 reference) -->
+@if (Model.Loan.Status == "Active" && Model.Loan.RemainingBalance > 0)
+{
+    <div class="bp-sticky-bar no-print">
+        <div class="bp-sticky-bar-inner">
+            <div>
+                <div class="bp-sticky-amount">₹@Model.Loan.EMIAmount.ToString("N2")</div>
+                <button type="button" class="btn btn-link p-0 text-indigo fw-bold text-decoration-none" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#breakupModal">
+                    View Breakup <i class="fa-solid fa-chevron-up" style="font-size: 0.65rem;"></i>
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="PayEmi" asp-route-loanId="@Model.Loan.LoanId" class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3 py-2">
+                    Close Loan
+                </a>
+                <a asp-action="PayEmi" asp-route-loanId="@Model.Loan.LoanId" class="bp-btn-sticky-primary">
+                    <i class="fa-solid fa-bolt me-1"></i> Pay EMI (Razorpay)
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Breakup Modal -->
+<div class="modal fade" id="breakupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h6 class="modal-title fw-bold text-dark mb-0">Installment Breakup</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 small">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Principal Component:</span>
+                    <span class="fw-bold text-dark">₹@((Model.Loan.EMIAmount * 0.75m).ToString("N2"))</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Interest Component (12% p.a.):</span>
+                    <span class="fw-bold text-dark">₹@((Model.Loan.EMIAmount * 0.25m).ToString("N2"))</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Processing/Late Fees:</span>
+                    <span class="fw-bold text-success">₹0.00</span>
+                </div>
+                <hr class="my-2" />
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Total Monthly Payable:</span>
+                    <span class="text-indigo">₹@Model.Loan.EMIAmount.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loan Documents Bottom Sheet / Modal (Image 4 reference) -->
+<div class="modal fade" id="loanDocsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-folder-closed text-indigo me-2"></i> Your Loan Documents
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-secondary small mb-3">Official institutional credit documentation compliant with RBI microfinance disclosures:</p>
+                
+                <ul class="list-unstyled d-flex flex-column gap-2 mb-4">
+                    <li class="p-2 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-danger"></i>
+                            <span class="fw-semibold text-dark">Key Fact Statement (KFS)</span>
+                        </div>
+                        <a asp-action="Document" asp-route-id="@Model.Loan.LoanId" asp-route-type="kfs" target="_blank" class="text-indigo text-decoration-none fw-bold" style="font-size: 0.78rem;">View</a>
+                    </li>
+                    <li class="p-2 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-danger"></i>
+                            <span class="fw-semibold text-dark">Sanction Letter</span>
+                        </div>
+                        <a asp-action="Document" asp-route-id="@Model.Loan.LoanId" asp-route-type="sanction" target="_blank" class="text-indigo text-decoration-none fw-bold" style="font-size: 0.78rem;">View</a>
+                    </li>
+                    <li class="p-2 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-danger"></i>
+                            <span class="fw-semibold text-dark">Loan Agreement</span>
+                        </div>
+                        <a asp-action="Document" asp-route-id="@Model.Loan.LoanId" asp-route-type="agreement" target="_blank" class="text-indigo text-decoration-none fw-bold" style="font-size: 0.78rem;">View</a>
+                    </li>
+                    <li class="p-2 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-danger"></i>
+                            <span class="fw-semibold text-dark">Loan Application Letter</span>
+                        </div>
+                        <a asp-action="Document" asp-route-id="@Model.Loan.LoanId" asp-route-type="application" target="_blank" class="text-indigo text-decoration-none fw-bold" style="font-size: 0.78rem;">View</a>
+                    </li>
+                </ul>
+
+                <!-- Actions (Image 4 reference) -->
+                <div class="d-flex gap-2">
+                    <a asp-action="Document" asp-route-id="@Model.Loan.LoanId" asp-route-type="sanction" target="_blank" class="btn btn-outline-secondary w-50 py-2 fw-semibold rounded-3 small">
+                        <i class="fa-solid fa-download me-1"></i> Download PDF
+                    </a>
+                    <button type="button" id="btnEmailDocs" class="bp-btn bp-btn-primary w-50 py-2 fw-semibold rounded-3 small justify-content-center" data-loan-id="@Model.Loan.LoanId">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send on Email
+                    </button>
+                </div>
+                <div id="emailDocsAlert" class="mt-2 small text-center d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Confirmation Modal (UPI / Gateway Simulation - Section 6) -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-shield-halved text-success me-2"></i> FinGuard Digital Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ProcessPayment" method="post" id="payForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="loanId" value="@Model.Loan.LoanId" />
+                
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                        <div class="small text-secondary fw-semibold">Payable Amount</div>
+                        <div class="fs-2 fw-bold text-dark" id="modalPayAmountText">₹@Model.Loan.EMIAmount.ToString("N2")</div>
+                        <input type="hidden" name="amount" id="modalPayAmountInput" value="@Model.Loan.EMIAmount" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Choose Payment Channel</label>
+                        <div class="d-flex flex-column gap-2">
+                            <label class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer bg-white">
+                                <input type="radio" name="paymentMethod" value="UPI" checked />
+                                <i class="fa-brands fa-google-pay fs-5 text-primary"></i>
+                                <span class="fw-semibold small text-dark">UPI (GPay / PhonePe / Paytm / BHIM)</span>
+                            </label>
+                            <label class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer bg-white">
+                                <input type="radio" name="paymentMethod" value="NetBanking" />
+                                <i class="fa-solid fa-building-columns fs-6 text-secondary"></i>
+                                <span class="fw-semibold small text-dark">Net Banking (SBI / HDFC / ICICI / Axis)</span>
+                            </label>
+                            <label class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer bg-white">
+                                <input type="radio" name="paymentMethod" value="DebitCard" />
+                                <i class="fa-regular fa-credit-card fs-6 text-secondary"></i>
+                                <span class="fw-semibold small text-dark">Debit Card</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 rounded-3 small border-info-subtle mb-0" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Server-verified digital recovery ledger. Receipts are generated instantly upon confirmation.
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-3 py-1 small" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="btnConfirmPay" class="bp-btn bp-btn-primary rounded-pill px-4 py-2 small">
+                        Confirm & Record Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Modal amount customization for Close vs Pay
+            const payModal = document.getElementById('payModal');
+            if (payModal) {
+                payModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    if (button) {
+                        const amount = button.getAttribute('data-amount');
+                        if (amount) {
+                            document.getElementById('modalPayAmountInput').value = amount;
+                            document.getElementById('modalPayAmountText').textContent = '₹' + parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                    }
+                });
+            }
+
+            // Email loan documents AJAX
+            const btnEmail = document.getElementById('btnEmailDocs');
+            const alertBox = document.getElementById('emailDocsAlert');
+            if (btnEmail) {
+                btnEmail.addEventListener('click', function () {
+                    const loanId = this.getAttribute('data-loan-id');
+                    btnEmail.disabled = true;
+                    btnEmail.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+
+                    fetch('@Url.Action("EmailLoanDocuments", "Portal")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: 'id=' + encodeURIComponent(loanId)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btnEmail.disabled = false;
+                        btnEmail.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send on Email';
+                        if (alertBox) {
+                            alertBox.classList.remove('d-none');
+                            alertBox.className = 'mt-2 small text-center ' + (data.success ? 'text-success' : 'text-danger');
+                            alertBox.textContent = data.message;
+                        }
+                    })
+                    .catch(err => {
+                        btnEmail.disabled = false;
+                        btnEmail.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send on Email';
+                        if (alertBox) {
+                            alertBox.classList.remove('d-none');
+                            alertBox.className = 'mt-2 small text-center text-danger';
+                            alertBox.textContent = 'Could not dispatch email. Please check network.';
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+}

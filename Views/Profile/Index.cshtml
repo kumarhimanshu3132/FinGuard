@@ -1,120 +1,112 @@
 @model FinGuard.Models.AdminUser
+
 @{
-    ViewData["Title"] = "My Profile";
+    ViewData["Title"] = "Administrator Profile";
     string maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
 }
 
-<style>
-    .bg-dark-card {
-        background: #111827;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-    }
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-id-badge text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Administrator Profile
+        </h1>
+        <p class="fg-page-subtitle">Administrative account credentials, assigned role permissions, and officer details.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" id="btnEditProfile" class="fg-btn fg-btn-primary fg-btn-sm">
+            <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            <span>Edit Profile</span>
+        </button>
+    </div>
+</div>
 
-    .dark-input {
-        background-color: #0f172a !important;
-        color: #f8fafc !important;
-        border: 1px solid #334155 !important;
-        transition: all 0.2s ease;
-    }
+@if (TempData["Success"] != null)
+{
+    <div id="profileAlertSuccess" class="fg-alert fg-alert-success" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
+    </div>
+}
 
-    .dark-input:focus:not([readonly]) {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
-        outline: none;
-    }
-</style>
+@if (TempData["Info"] != null)
+{
+    <div id="profileAlertInfo" class="fg-alert fg-alert-info" role="alert">
+        <i class="fa-solid fa-circle-info fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Info"]</div>
+    </div>
+}
 
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="bg-dark-card rounded-4 p-4 p-md-5 mt-3">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold text-white mb-0">My Profile</h4>
-                <button type="button" id="btnEdit" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold"
-                        style="transition: all 0.3s ease;">
-                    Edit Profile
-                </button>
-            </div>
-
-            @if (TempData["Success"] != null)
-            {
-                <div id="profileAlertBox" class="alert alert-success rounded-3 fw-semibold"
-                     style="transition: opacity 0.5s ease;">
-                    ✅ @TempData["Success"]
-                </div>
-            }
-            @if (TempData["Info"] != null)
-            {
-                <div id="profileAlertBox" class="alert alert-info rounded-3 fw-semibold text-primary"
-                     style="background-color: #e0f2fe; border: 1px solid #bae6fd; transition: opacity 0.5s ease;">
-                    ℹ️ @TempData["Info"]
-                </div>
-            }
-
-            <script>
-                            setTimeout(function () {
-                                var alertBox = document.getElementById('profileAlertBox');
-                                if (alertBox) {
-                                    alertBox.style.opacity = '0';
-                                    setTimeout(function () {
-                                        alertBox.style.display = 'none';
-                                    }, 500);
-                                }
-                            }, 3000);
-            </script>
-
+    <div class="col-lg-8">
+        <div class="fg-card">
             <form asp-action="UpdateProfile" method="post" id="profileForm">
                 @Html.AntiForgeryToken()
-                <div class="row g-4">
 
-                    <div class="col-md-6">
-                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Username</label>
-                        <input type="text" class="form-control dark-input rounded-3 py-2 px-3"
-                               value="@Model.Username" readonly />
-                    </div>
+                <!-- Account Credentials (System Managed) -->
+                <div class="fg-form-section">
+                    <h2 class="fg-form-section-title">System Credentials & Role</h2>
+                    <p class="fg-form-section-desc">System authentication parameters managed by database directory.</p>
 
-                    <div class="col-md-6">
-                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Registered Email</label>
-                        <input type="email" class="form-control dark-input rounded-3 py-2 px-3"
-                               value="@Model.Email" readonly />
-                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="fg-form-label">System Username</label>
+                            <input type="text" class="form-control" value="@Model.Username" readonly />
+                            <div class="fg-input-hint">Unique authentication handle.</div>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Admin Role</label>
-                        <input type="text" class="form-control dark-input rounded-3 py-2 px-3"
-                               value="@Model.Role" readonly />
-                    </div>
+                        <div class="col-md-5">
+                            <label class="fg-form-label">Registered Email</label>
+                            <input type="email" class="form-control" value="@Model.Email" readonly />
+                            <div class="fg-input-hint">Primary alert & recovery email.</div>
+                        </div>
 
-                    <div class="col-12 mt-4 pt-3 border-top border-secondary opacity-75">
-                        <h6 class="fw-bold text-white mb-3">Personal Information</h6>
-                    </div>
-
-                    <div class="col-md-6 mt-2">
-                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Full Name</label>
-                        <input type="text" id="fullNameInput" name="fullName"
-                               class="form-control dark-input rounded-3 py-2 px-3" value="@Model.FullName"
-                               placeholder="Enter full name" readonly
-                               oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '').replace(/^\s+/g, '').replace(/\s{2,}/g, ' ');"
-                               required />
-                    </div>
-
-                    <div class="col-md-6 mt-2">
-                        <label class="form-label text-slate-400 small fw-medium mb-1" style="color: #94a3b8;">Date of Birth</label>
-                        <input type="date" id="dobInput" name="dateOfBirth"
-                               class="form-control dark-input rounded-3 py-2 px-3"
-                               value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" max="@maxDate" readonly required />
+                        <div class="col-md-3">
+                            <label class="fg-form-label">Authorization Role</label>
+                            <div class="pt-1">
+                                <span class="fg-badge fg-badge-info fs-6 px-3 py-2">
+                                    <span class="fg-badge-dot"></span>
+                                    @Model.Role
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-5 text-end" id="saveActions" style="display: none;">
-                    <button type="button" id="btnCancel"
-                            class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold me-2">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"
-                            style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border:none;">
-                        Save Changes
+                <!-- Personal Information (Editable) -->
+                <div class="fg-form-section">
+                    <h2 class="fg-form-section-title">Officer Demographics</h2>
+                    <p class="fg-form-section-desc">Personal details attached to this administrative record.</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="fg-form-label" for="fullNameInput">
+                                Full Legal Name <span class="required text-danger">*</span>
+                            </label>
+                            <input type="text" id="fullNameInput" name="fullName" class="form-control"
+                                   value="@Model.FullName" placeholder="Enter full name" readonly
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '').replace(/^\s+/g, '').replace(/\s{2,}/g, ' ');"
+                                   required />
+                            <div class="fg-input-hint">Displayed on collection receipts and logs.</div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label class="fg-form-label" for="dobInput">
+                                Date of Birth <span class="required text-danger">*</span>
+                            </label>
+                            <input type="date" id="dobInput" name="dateOfBirth" class="form-control"
+                                   value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" max="@maxDate" readonly required />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions (Hidden until Edit is clicked) -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-3" id="saveActions" style="display: none;">
+                    <button type="button" id="btnCancelProfile" class="fg-btn fg-btn-secondary">Cancel</button>
+                    <button type="submit" class="fg-btn fg-btn-primary">
+                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                        <span>Save Profile Changes</span>
                     </button>
                 </div>
             </form>
@@ -122,28 +114,46 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('btnEdit').addEventListener('click', function () {
-        var nameInput = document.getElementById('fullNameInput');
-        nameInput.removeAttribute('readonly');
-        
-        var dobInput = document.getElementById('dobInput');
-        dobInput.removeAttribute('readonly');
-        
-        this.style.display = 'none';
-        document.getElementById('saveActions').style.display = 'block';
-    });
+@section Scripts {
+    <script>
+        (function () {
+            const btnEdit = document.getElementById('btnEditProfile');
+            const btnCancel = document.getElementById('btnCancelProfile');
+            const saveActions = document.getElementById('saveActions');
+            const fullNameInput = document.getElementById('fullNameInput');
+            const dobInput = document.getElementById('dobInput');
+            const profileForm = document.getElementById('profileForm');
 
-    document.getElementById('btnCancel').addEventListener('click', function () {
-        var nameInput = document.getElementById('fullNameInput');
-        nameInput.setAttribute('readonly', 'readonly');
-        
-        var dobInput = document.getElementById('dobInput');
-        dobInput.setAttribute('readonly', 'readonly');
-        
-        document.getElementById('saveActions').style.display = 'none';
-        document.getElementById('btnEdit').style.display = 'inline-block';
-        
-        document.getElementById('profileForm').reset();
-    });
-</script>
+            if (btnEdit) {
+                btnEdit.addEventListener('click', function () {
+                    if (fullNameInput) fullNameInput.removeAttribute('readonly');
+                    if (dobInput) dobInput.removeAttribute('readonly');
+                    this.style.display = 'none';
+                    if (saveActions) saveActions.style.display = 'flex';
+                    if (fullNameInput) fullNameInput.focus();
+                });
+            }
+
+            if (btnCancel) {
+                btnCancel.addEventListener('click', function () {
+                    if (fullNameInput) fullNameInput.setAttribute('readonly', 'readonly');
+                    if (dobInput) dobInput.setAttribute('readonly', 'readonly');
+                    if (saveActions) saveActions.style.display = 'none';
+                    if (btnEdit) btnEdit.style.display = 'inline-flex';
+                    if (profileForm) profileForm.reset();
+                });
+            }
+
+            ['profileAlertSuccess', 'profileAlertInfo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    setTimeout(() => {
+                        el.style.transition = 'opacity 400ms ease';
+                        el.style.opacity = '0';
+                        setTimeout(() => el.remove(), 400);
+                    }, 3500);
+                }
+            });
+        })();
+    </script>
+}

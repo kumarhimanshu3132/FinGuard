@@ -1,0 +1,82 @@
+@model List<FinGuard.Models.Repayment>
+
+@{
+    ViewData["Title"] = "Payment History - FinGuard";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Dashboard" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+        </a>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">
+            @Model.Count Payments Logged
+        </span>
+    </div>
+
+    <!-- Header -->
+    <div class="mb-3">
+        <h1 class="fs-5 fw-bold text-dark mb-0">Repayments & Receipts</h1>
+        <div class="text-secondary small fw-medium">
+            Historical log of all verified installment collections and digital payment receipts.
+        </div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="d-flex flex-column gap-2 mb-4">
+            @foreach (var rep in Model)
+            {
+                <div class="p-3 bg-white rounded-3 border border-light-subtle shadow-xs">
+                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                                <i class="fa-solid fa-check-circle me-1"></i> Confirmed
+                            </span>
+                            @if (rep.IsTestMode)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0" style="font-size: 0.68rem;">
+                                    Razorpay Test
+                                </span>
+                            }
+                            <span class="fw-bold text-dark small">#REC-@rep.RepaymentId</span>
+                        </div>
+                        <a asp-action="Receipt" asp-route-id="@rep.RepaymentId" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-semibold" style="font-size: 0.72rem;">
+                            <i class="fa-solid fa-receipt me-1"></i> Receipt
+                        </a>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-secondary small">
+                                Facility: <a asp-action="LoanDetails" asp-route-id="@rep.LoanId" class="text-indigo fw-bold text-decoration-none">Loan #@rep.LoanId</a>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                Paid on @rep.PaymentDate.ToString("dd MMM yyyy, hh:mm tt")
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                Channel: <span class="text-dark fw-medium">@rep.CollectedBy</span>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <div class="text-muted" style="font-size: 0.72rem;">Amount Credited</div>
+                            <div class="fs-5 fw-bold text-success num-tabular">₹@rep.AmountPaid.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="bp-card p-5 text-center my-3">
+            <div class="bp-kpi-icon success mx-auto mb-2"><i class="fa-solid fa-receipt"></i></div>
+            <h2 class="fs-6 fw-bold text-dark mb-1">No Payments Logged Yet</h2>
+            <p class="text-secondary small mb-3">When you make EMI or settlement payments, instant verifiable receipts will appear here.</p>
+            <a asp-action="Schedule" class="btn btn-sm btn-primary rounded-pill px-3 py-1">View Upcoming Schedule</a>
+        </div>
+    }
+</div>

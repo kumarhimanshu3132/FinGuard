@@ -13,6 +13,9 @@ namespace FinGuard.Data
         public DbSet<Loan> Loans { get; set; }
         public DbSet<Repayment> Repayments { get; set; }
         public DbSet<AdminUser> AdminUsers { get; set; }
+        public DbSet<BankAccount> BankAccounts { get; set; }
+        public DbSet<LoanDisbursement> LoanDisbursements { get; set; }
+        public DbSet<RazorpayOrderRecord> RazorpayOrders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +28,35 @@ namespace FinGuard.Data
             modelBuilder.Entity<Customer>()
                 .HasIndex(c => c.Phone)
                 .IsUnique();
+
+            modelBuilder.Entity<BankAccount>()
+                .HasIndex(b => b.CustomerId);
+
+            modelBuilder.Entity<LoanDisbursement>()
+                .HasIndex(d => d.LoanId);
+
+            modelBuilder.Entity<LoanDisbursement>()
+                .HasIndex(d => d.CustomerId);
+
+            modelBuilder.Entity<LoanDisbursement>()
+                .HasIndex(d => d.TransactionReference)
+                .IsUnique();
+
+            modelBuilder.Entity<Repayment>()
+                .HasIndex(r => r.RazorpayPaymentId);
+
+            modelBuilder.Entity<Repayment>()
+                .HasIndex(r => r.RazorpayOrderId);
+
+            modelBuilder.Entity<RazorpayOrderRecord>()
+                .HasIndex(o => o.RazorpayOrderId)
+                .IsUnique();
+
+            modelBuilder.Entity<RazorpayOrderRecord>()
+                .HasIndex(o => o.CustomerId);
+
+            modelBuilder.Entity<RazorpayOrderRecord>()
+                .HasIndex(o => o.LoanId);
 
             modelBuilder.Entity<AdminUser>().HasData(
                 new AdminUser { 

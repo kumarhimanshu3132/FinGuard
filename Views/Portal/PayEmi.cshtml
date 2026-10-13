@@ -1,0 +1,447 @@
+@model FinGuard.Models.PayEmiViewModel
+
+@{
+    ViewData["Title"] = $"Pay EMI - Loan #{Model.LoanId} (Razorpay Test Mode)";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="LoanDetails" asp-route-id="@Model.LoanId" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Loan Details
+        </a>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1 small fw-bold">
+            <i class="fa-solid fa-flask-vial me-1"></i> RAZORPAY TEST MODE
+        </span>
+    </div>
+
+    <!-- Header -->
+    <div class="mb-3">
+        <h1 class="fs-5 fw-bold text-dark mb-0">Pay Installment</h1>
+        <p class="text-secondary small mb-0">Secure digital recovery powered by Razorpay Test Gateway</p>
+    </div>
+
+    <!-- Test Mode Alert Banner -->
+    <div class="alert alert-warning border border-warning-subtle rounded-3 p-3 mb-3 small d-flex align-items-start gap-2 shadow-xs">
+        <i class="fa-solid fa-triangle-exclamation text-warning mt-1 fs-6 flex-shrink-0"></i>
+        <div>
+            <strong class="d-block text-dark">Simulated Test Mode Environment</strong>
+            <span class="text-secondary" style="font-size: 0.77rem; line-height: 1.4;">
+                This transaction runs strictly in <strong>Razorpay Test Mode</strong>. No real currency is debited or credited. 
+                Do not enter sensitive live banking credentials. Test UPI IDs (e.g. <code>success@razorpay</code>) and test cards are supported.
+            </span>
+        </div>
+    </div>
+
+    <!-- Facility Overview Card -->
+    <div class="bp-card p-3 p-md-4 mb-3 border shadow-sm">
+        <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+            <div>
+                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Loan Account Facility</span>
+                <span class="fs-6 fw-bold text-dark">#LN-@Model.LoanId</span>
+            </div>
+            <div class="text-end">
+                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Due Date</span>
+                <span class="badge bg-light text-secondary border fw-bold">@Model.NextDueDate.ToString("dd MMM yyyy")</span>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-2 text-center">
+            <div class="col-6">
+                <div class="p-2 bg-light rounded-3">
+                    <span class="text-muted d-block" style="font-size: 0.7rem;">Current Monthly EMI</span>
+                    <strong class="fs-5 text-indigo num-tabular">₹@Model.EMIAmount.ToString("N2")</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2 bg-light rounded-3">
+                    <span class="text-muted d-block" style="font-size: 0.7rem;">Outstanding Balance</span>
+                    <strong class="fs-5 text-dark num-tabular">₹@Model.RemainingBalance.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-muted small text-center" style="font-size: 0.72rem;">
+            Completed: <strong>@Model.PaidInstallmentsCount</strong> of <strong>@Model.TotalInstallmentsCount</strong> monthly installments
+        </div>
+    </div>
+
+    <!-- Payment Amount Options -->
+    <div class="bp-card p-3 p-md-4 mb-3 border shadow-sm">
+        <span class="fw-bold text-dark small d-block mb-3">
+            <i class="fa-solid fa-coins text-warning me-1"></i> Select Payment Amount
+        </span>
+
+        <div class="d-flex flex-column gap-2 mb-3">
+            <!-- Option 1: Standard EMI -->
+            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer payment-option-card border-primary bg-light" style="cursor: pointer;">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="radio" name="payOption" value="@Model.EMIAmount" data-type="EMI" class="form-check-input mt-0" checked />
+                    <div>
+                        <div class="fw-bold text-dark small">Standard Monthly EMI</div>
+                        <div class="text-secondary small" style="font-size: 0.72rem;">Clears current scheduled installment</div>
+                    </div>
+                </div>
+                <div class="fs-6 fw-bold text-indigo num-tabular">₹@Model.EMIAmount.ToString("N2")</div>
+            </label>
+
+            <!-- Option 2: Full Foreclosure -->
+            @if (Model.ForeclosureAmount > 0)
+            {
+                <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer payment-option-card" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="radio" name="payOption" value="@Model.ForeclosureAmount" data-type="Foreclosure" class="form-check-input mt-0" />
+                        <div>
+                            <div class="fw-bold text-dark small d-flex align-items-center gap-1">
+                                Full Loan Settlement
+                                <span class="badge bg-success rounded-pill px-2 py-0" style="font-size: 0.65rem;">Save ₹@Model.ForeclosureSavings:N0</span>
+                            </div>
+                            <div class="text-secondary small" style="font-size: 0.72rem;">Closes facility permanently & marks credit healthy</div>
+                        </div>
+                    </div>
+                    <div class="fs-6 fw-bold text-success num-tabular">₹@Model.ForeclosureAmount.ToString("N2")</div>
+                </label>
+            }
+
+            <!-- Option 3: Custom Partial Amount -->
+            <label class="p-3 border rounded-3 d-flex flex-column gap-2 cursor-pointer payment-option-card" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="radio" name="payOption" value="custom" data-type="Custom" class="form-check-input mt-0" />
+                        <div>
+                            <div class="fw-bold text-dark small">Custom Part-Payment</div>
+                            <div class="text-secondary small" style="font-size: 0.72rem;">Pay any custom amount toward balance</div>
+                        </div>
+                    </div>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Min ₹100 - Max ₹@Model.RemainingBalance:N0</span>
+                </div>
+                <div id="customAmountWrap" class="mt-2 d-none">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white fw-bold">₹</span>
+                        <input type="number" id="customAmountInput" class="form-control" placeholder="Enter amount" min="100" max="@Model.RemainingBalance" step="1" />
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <!-- Total Payable Summary -->
+        <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Total Payment Amount</span>
+                <span class="fw-bold text-dark small">Instant Ledger Settlement</span>
+            </div>
+            <div class="text-end">
+                <span class="fs-4 fw-bold text-indigo num-tabular" id="displayPayAmount">₹@Model.EMIAmount.ToString("N2")</span>
+            </div>
+        </div>
+
+        <!-- Security Credentials Notice -->
+        <div class="d-flex align-items-center gap-2 text-muted small mb-3" style="font-size: 0.72rem;">
+            <i class="fa-solid fa-shield-halved text-success"></i>
+            <span>256-bit encrypted payload • Verified cryptographic signature • Zero card storage</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="button" id="btnInitiatePayment" class="bp-btn bp-btn-primary w-100 py-2 fs-6 justify-content-center shadow-sm">
+            <i class="fa-solid fa-lock me-1"></i> Proceed to Pay (Razorpay Test Mode)
+        </button>
+
+        <div id="paymentFeedback" class="mt-3 small text-center d-none"></div>
+    </div>
+</div>
+
+<!-- Fallback Sandbox Simulation Modal (Used when developer runs without real Razorpay test credentials) -->
+<div class="modal fade" id="sandboxSimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h6 class="modal-title fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-flask text-warning me-1"></i> FinGuard Sandbox Payment Simulator
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info small py-2 px-3 rounded-3 mb-3 border-info-subtle">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Local Test Mode: Simulating Razorpay gateway response to verify server-side signature validation, atomic ledger updates, and receipt routing.
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                    <span class="text-muted small d-block">Amount to Authorize</span>
+                    <span class="fs-3 fw-bold text-indigo" id="simModalAmount">₹0.00</span>
+                    <div class="text-muted small mt-1 font-monospace" id="simModalOrderId" style="font-size: 0.75rem;"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Simulated Test Channel</label>
+                    <select id="simChannelSelect" class="form-select form-select-sm">
+                        <option value="UPI">UPI (success@razorpay / Google Pay Test)</option>
+                        <option value="DebitCard">Test Card (Razorpay 4111-XXXX-XXXX-1111)</option>
+                        <option value="NetBanking">Net Banking (HDFC Test Sandbox)</option>
+                    </select>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light w-50 py-2 small rounded-pill border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="btnSimulateSuccess" class="bp-btn bp-btn-primary w-50 py-2 small justify-content-center rounded-pill">
+                        <i class="fa-solid fa-check-circle me-1"></i> Authorize Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Anti-Forgery Form Token for AJAX Requests -->
+<form id="afForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <!-- Official Razorpay Checkout JS -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loanId = @Model.LoanId;
+            const remainingBalance = @Model.RemainingBalance;
+            let currentSelectedAmount = @Model.EMIAmount;
+            let currentPaymentType = "EMI";
+            let activeOrderData = null;
+
+            const radioOptions = document.querySelectorAll('input[name="payOption"]');
+            const customWrap = document.getElementById('customAmountWrap');
+            const customInput = document.getElementById('customAmountInput');
+            const displayAmount = document.getElementById('displayPayAmount');
+            const btnPay = document.getElementById('btnInitiatePayment');
+            const feedback = document.getElementById('paymentFeedback');
+            const afToken = document.querySelector('#afForm input[name="__RequestVerificationToken"]')?.value || '';
+
+            // Handle Amount Selection
+            radioOptions.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    document.querySelectorAll('.payment-option-card').forEach(c => {
+                        c.classList.remove('border-primary', 'bg-light');
+                    });
+                    this.closest('.payment-option-card').classList.add('border-primary', 'bg-light');
+
+                    const type = this.getAttribute('data-type');
+                    currentPaymentType = type;
+
+                    if (type === 'Custom') {
+                        customWrap.classList.remove('d-none');
+                        const customVal = parseFloat(customInput.value) || 0;
+                        currentSelectedAmount = customVal;
+                        updateDisplay(customVal);
+                    } else {
+                        customWrap.classList.add('d-none');
+                        const val = parseFloat(this.value) || 0;
+                        currentSelectedAmount = val;
+                        updateDisplay(val);
+                    }
+                });
+            });
+
+            if (customInput) {
+                customInput.addEventListener('input', function () {
+                    let val = parseFloat(this.value) || 0;
+                    if (val > remainingBalance) {
+                        val = remainingBalance;
+                        this.value = val;
+                    }
+                    currentSelectedAmount = val;
+                    updateDisplay(val);
+                });
+            }
+
+            function updateDisplay(val) {
+                displayAmount.textContent = '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            // Initiate Razorpay Order & Payment
+            btnPay.addEventListener('click', function () {
+                if (currentSelectedAmount <= 0) {
+                    showFeedback('Please enter or select a valid payment amount.', 'danger');
+                    return;
+                }
+
+                if (currentSelectedAmount > remainingBalance) {
+                    showFeedback('Payment amount cannot exceed the outstanding balance of ₹' + remainingBalance.toFixed(2), 'danger');
+                    return;
+                }
+
+                setLoading(true, 'Initializing Razorpay Order...');
+
+                fetch('@Url.Action("CreateRazorpayOrder", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': afToken
+                    },
+                    body: JSON.stringify({
+                        loanId: loanId,
+                        amount: currentSelectedAmount,
+                        paymentType: currentPaymentType
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        setLoading(false);
+                        showFeedback(data.message || 'Could not initiate payment order.', 'danger');
+                        return;
+                    }
+
+                    activeOrderData = data;
+
+                    // Check if we have active Razorpay credentials or fallback simulator
+                    const isRealKeys = data.keyId && 
+                                       !data.keyId.includes('YourTestKeyId') && 
+                                       data.keyId.startsWith('rzp_test_');
+
+                    if (isRealKeys && typeof Razorpay !== 'undefined') {
+                        launchRazorpayCheckout(data);
+                    } else {
+                        // Open developer sandbox simulator modal
+                        setLoading(false);
+                        openSandboxSimulator(data);
+                    }
+                })
+                .catch(err => {
+                    setLoading(false);
+                    showFeedback('Network error while connecting to payment service.', 'danger');
+                });
+            });
+
+            function launchRazorpayCheckout(order) {
+                const options = {
+                    key: order.keyId,
+                    amount: order.amountInPaise,
+                    currency: order.currency,
+                    name: order.companyName || 'FinGuard Microfinance',
+                    description: 'EMI Payment for Loan Facility #' + loanId + ' (TEST MODE)',
+                    order_id: order.orderId,
+                    prefill: {
+                        name: order.borrowerName,
+                        email: order.borrowerEmail,
+                        contact: order.borrowerPhone
+                    },
+                    notes: {
+                        loanId: loanId.toString(),
+                        isTestMode: 'true'
+                    },
+                    theme: {
+                        color: order.themeColor || '#4f46e5'
+                    },
+                    handler: function (response) {
+                        // Razorpay callback payload:
+                        // response.razorpay_payment_id
+                        // response.razorpay_order_id
+                        // response.razorpay_signature
+                        verifyAndSettlePayment({
+                            loanId: loanId,
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpaySignature: response.razorpay_signature,
+                            paymentMethod: 'Razorpay_Checkout_Test'
+                        });
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            setLoading(false);
+                            showFeedback('Payment cancelled by user. No funds were debited.', 'warning');
+                        }
+                    }
+                };
+
+                try {
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function (response) {
+                        setLoading(false);
+                        showFeedback('Payment Failed: ' + (response.error.description || 'Transaction declined in test mode.'), 'danger');
+                    });
+                    rzp.open();
+                } catch (e) {
+                    setLoading(false);
+                    // Fall back to sandbox modal if checkout script encounters an issue
+                    openSandboxSimulator(order);
+                }
+            }
+
+            function openSandboxSimulator(order) {
+                document.getElementById('simModalAmount').textContent = '₹' + order.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                document.getElementById('simModalOrderId').textContent = 'Order Ref: ' + order.orderId;
+                const simModal = new bootstrap.Modal(document.getElementById('sandboxSimModal'));
+                simModal.show();
+            }
+
+            // Simulate payment in sandbox mode
+            const btnSimSuccess = document.getElementById('btnSimulateSuccess');
+            if (btnSimSuccess) {
+                btnSimSuccess.addEventListener('click', function () {
+                    const simModal = bootstrap.Modal.getInstance(document.getElementById('sandboxSimModal'));
+                    if (simModal) simModal.hide();
+
+                    if (!activeOrderData) return;
+
+                    const channel = document.getElementById('simChannelSelect').value;
+                    const testPaymentId = 'pay_test_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+                    const testSignature = 'simulated_test_sig_' + Date.now();
+
+                    verifyAndSettlePayment({
+                        loanId: loanId,
+                        razorpayOrderId: activeOrderData.orderId,
+                        razorpayPaymentId: testPaymentId,
+                        razorpaySignature: testSignature,
+                        paymentMethod: 'Razorpay_' + channel + '_Test'
+                    });
+                });
+            }
+
+            function verifyAndSettlePayment(payload) {
+                setLoading(true, 'Verifying cryptographic signature & updating ledger...');
+
+                fetch('@Url.Action("VerifyRazorpayPayment", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': afToken
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showFeedback('Payment verified! Redirecting to receipt...', 'success');
+                        setTimeout(() => {
+                            window.location.href = data.redirectUrl || '@Url.Action("Repayments", "Portal")';
+                        }, 900);
+                    } else {
+                        setLoading(false);
+                        showFeedback(data.message || 'Signature verification failed. Untrusted response.', 'danger');
+                    }
+                })
+                .catch(err => {
+                    setLoading(false);
+                    showFeedback('Server verification error. Please check your repayment history.', 'danger');
+                });
+            }
+
+            function setLoading(isLoading, text) {
+                btnPay.disabled = isLoading;
+                if (isLoading) {
+                    btnPay.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + (text || 'Processing...');
+                } else {
+                    btnPay.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Proceed to Pay (Razorpay Test Mode)';
+                }
+            }
+
+            function showFeedback(msg, type) {
+                feedback.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+                feedback.classList.add('alert', 'alert-' + type, 'p-2', 'rounded-3');
+                feedback.textContent = msg;
+            }
+        });
+    </script>
+}

@@ -2,78 +2,51 @@
 
 @{
     ViewData["Title"] = "EMI Collections";
+    var activeCount = Model != null ? Model.Count() : 0;
 }
 
-<style>
-    .page-header {
-        margin-bottom: 2.5rem;
-        margin-top: 1rem;
-    }
-
-    .header-title {
-        font-weight: 800;
-        color: var(--text-primary);
-        letter-spacing: -0.5px;
-    }
-
-    .custom-table {
-        margin-bottom: 0;
-        width: 100%;
-        color: var(--text-primary);
-    }
-
-    .custom-table th {
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--text-primary);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
-        padding: 1.2rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .custom-table td {
-        padding: 1.2rem 1.5rem;
-        vertical-align: middle;
-        color: var(--text-primary);
-        font-weight: 500;
-        border-bottom: 1px solid var(--border-color);
-    }
-</style>
-
-<div class="page-header d-flex justify-content-between align-items-center" style="max-width: 1000px; margin: 1rem auto 2.5rem;">
-    <h2 class="header-title mb-0">EMI Collections</h2>
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-hand-holding-dollar text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            EMI Collections & Field Recovery
+            <span class="fg-count-badge">@activeCount Active Accounts</span>
+        </h1>
+        <p class="fg-page-subtitle">Process microfinance loan installment collections and record receipts in real time.</p>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div id="alertBoxSuccess" class="alert alert-success d-flex align-items-center"
-         style="max-width: 1000px; margin: 0 auto 1.5rem; border-radius: 12px; font-weight: 600; transition: opacity 0.5s ease;">
-        <span class="me-2">✅</span> @TempData["Success"]
+    <div id="repayAlertSuccess" class="fg-alert fg-alert-success" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
     </div>
-
-    <script>
-        setTimeout(function () {
-            var successBox = document.getElementById('alertBoxSuccess');
-            if (successBox) {
-                successBox.style.opacity = '0';
-                setTimeout(function () { successBox.style.display = 'none'; }, 500);
-            }
-        }, 3000);
-    </script>
 }
 
-<div class="fg-card" style="max-width: 1000px; margin: 0 auto; padding: 0; overflow: hidden;">
-    <div class="table-responsive">
-        <table class="custom-table">
+<!-- Table Card with Search -->
+<div class="fg-card fg-card-flush">
+    <div class="fg-filter-bar">
+        <div class="fg-search-input-group">
+            <i class="fa-solid fa-magnifying-glass fg-search-icon" aria-hidden="true"></i>
+            <input type="text" id="repaySearchInput" class="fg-search-input"
+                   placeholder="Search by Loan ID or Customer ID..." aria-label="Search collection accounts" />
+        </div>
+        <div class="text-muted small">
+            <span>Showing active loan accounts requiring installment collection</span>
+        </div>
+    </div>
+
+    <div class="fg-table-responsive">
+        <table class="fg-table">
             <thead>
                 <tr>
-                    <th class="text-light">Loan ID</th>
-                    <th class="text-light">Customer ID</th>
-                    <th class="text-light">Monthly EMI</th>
-                    <th class="text-light">Remaining Balance</th>
-                    <th class="text-light">Action</th>
+                    <th scope="col" style="width: 120px;">Loan ID</th>
+                    <th scope="col" style="width: 140px;">Customer ID</th>
+                    <th scope="col" class="text-end">Scheduled Monthly EMI</th>
+                    <th scope="col" class="text-end">Current Remaining Balance</th>
+                    <th scope="col" class="text-end" style="width: 160px;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -81,15 +54,28 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
-                            <td class="fw-bold text-light">#@item.LoanId</td>
-                            <td class="text-light opacity-75">#@item.CustomerId</td>
-                            <td class="fw-bold text-light">₹@item.EMIAmount</td>
-                            <td class="fw-bold text-danger">₹@item.RemainingBalance</td>
+                        <tr class="repay-row" data-search="@item.LoanId @item.CustomerId">
                             <td>
-                                <a asp-controller="Repayment" asp-action="Collect" asp-route-loanId="@item.LoanId"
-                                   class="btn btn-sm px-4 fw-bold text-white rounded-pill"
-                                   style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">Collect EMI</a>
+                                <span class="fg-row-id">#@item.LoanId</span>
+                            </td>
+                            <td>
+                                <a asp-controller="Customer" asp-action="Edit" asp-route-id="@item.CustomerId"
+                                   class="fw-semibold text-primary">
+                                    #@item.CustomerId
+                                </a>
+                            </td>
+                            <td class="text-end num-tabular fw-semibold text-dark">
+                                ₹@item.EMIAmount.ToString("N2")
+                            </td>
+                            <td class="text-end num-tabular fw-semibold text-danger">
+                                ₹@item.RemainingBalance.ToString("N2")
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Collect" asp-route-loanId="@item.LoanId"
+                                   class="fg-btn fg-btn-success fg-btn-sm" title="Collect Installment">
+                                    <i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i>
+                                    <span>Collect EMI</span>
+                                </a>
                             </td>
                         </tr>
                     }
@@ -97,8 +83,18 @@
                 else
                 {
                     <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <h5 class="fw-bold text-light opacity-75">No active loans found for collection.</h5>
+                        <td colspan="5" class="p-0">
+                            <div class="fg-empty-state">
+                                <div class="fg-empty-icon">
+                                    <i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="fg-empty-title">All Installments Up to Date</h3>
+                                <p class="fg-empty-desc">There are no active loans currently pending installment collection.</p>
+                                <a asp-controller="Loan" asp-action="Index" class="fg-btn fg-btn-secondary fg-btn-sm">
+                                    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                                    <span>View Loan Directory</span>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -106,3 +102,31 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const searchInput = document.getElementById('repaySearchInput');
+            const rows = document.querySelectorAll('.repay-row');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const query = this.value.toLowerCase().trim();
+                    rows.forEach(row => {
+                        const data = row.getAttribute('data-search') || '';
+                        row.style.display = !query || data.includes(query) ? '' : 'none';
+                    });
+                });
+            }
+
+            const alertSuccess = document.getElementById('repayAlertSuccess');
+            if (alertSuccess) {
+                setTimeout(() => {
+                    alertSuccess.style.transition = 'opacity 400ms ease';
+                    alertSuccess.style.opacity = '0';
+                    setTimeout(() => alertSuccess.remove(), 400);
+                }, 4000);
+            }
+        })();
+    </script>
+}

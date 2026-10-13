@@ -1,77 +1,138 @@
 @model FinGuard.Models.Loan
+
 @{
-    ViewData["Title"] = "Issue Loan";
+    ViewData["Title"] = "Issue New Loan";
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <div class="fg-card p-4">
-            <h4 class="fw-bold mb-4" style="color: var(--text-primary);">Issue New Loan</h4>
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-file-signature text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Issue Microfinance Loan
+        </h1>
+        <p class="fg-page-subtitle">Configure loan terms, select verified borrower, and compute dynamic EMI schedule.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Index" class="fg-btn fg-btn-secondary fg-btn-sm">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span>Back to Loans</span>
+        </a>
+    </div>
+</div>
 
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="fg-card">
             <form asp-action="Create" method="post">
-                <div class="row g-3">
+                @Html.AntiForgeryToken()
 
-                    <div class="col-md-6">
-                        <label asp-for="LoanId" class="form-label fw-bold" style="color: var(--text-secondary);">Manual Loan ID</label>
-                        <input asp-for="LoanId" class="form-control" placeholder="Enter Loan ID" required />
-                        <span asp-validation-for="LoanId" class="text-danger small mt-1 d-block"></span>
-                    </div>
+                <div class="fg-form-section">
+                    <h2 class="fg-form-section-title">Borrower & Account Assignment</h2>
+                    <p class="fg-form-section-desc">Assign loan record to an onboarded, KYC-verified customer.</p>
 
-                    <div class="col-md-6">
-                        <label asp-for="CustomerId" class="form-label fw-bold" style="color: var(--text-secondary);">Select Customer</label>
-                        <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.Customers" required>
-                            <option value="">-- Select Customer --</option>
-                        </select>
-                        <span asp-validation-for="CustomerId" class="text-danger small"></span>
-                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="LoanId" class="fg-form-label">
+                                Assigned Loan ID <span class="required text-danger">*</span>
+                            </label>
+                            <input asp-for="LoanId" type="number" class="form-control num-tabular"
+                                   placeholder="e.g. 5001" required />
+                            <span asp-validation-for="LoanId" class="text-danger small mt-1 d-block"></span>
+                            <div class="fg-input-hint">Unique numerical identifier for the loan ledger.</div>
+                        </div>
 
-                    <div class="col-md-4">
-                        <label asp-for="PrincipalAmount" class="form-label fw-bold" style="color: var(--text-secondary);">Principal Amount (₹)</label>
-                        <input asp-for="PrincipalAmount" id="PrincipalAmount" class="form-control calc-input"
-                               placeholder="Amount (₹)" required />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label asp-for="InterestRate" class="form-label fw-bold" style="color: var(--text-secondary);">Interest Rate (% Yearly)</label>
-                        <input asp-for="InterestRate" id="InterestRate" class="form-control calc-input" placeholder="Interest Rate (%)"
-                               required />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label asp-for="TenureMonths" class="form-label fw-bold" style="color: var(--text-secondary);">Tenure (Months)</label>
-                        <input asp-for="TenureMonths" id="TenureMonths" class="form-control calc-input" placeholder="Tenure (Months)"
-                               required />
+                        <div class="col-md-6">
+                            <label asp-for="CustomerId" class="fg-form-label">
+                                Select Borrower <span class="required text-danger">*</span>
+                            </label>
+                            <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.Customers" required>
+                                <option value="">-- Choose Verified Customer --</option>
+                            </select>
+                            <span asp-validation-for="CustomerId" class="text-danger small mt-1 d-block"></span>
+                            <div class="fg-input-hint">Customer must have completed KYC verification.</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-4 p-3 rounded-3" style="background-color: var(--bg-primary); border: 1px dashed var(--border-color);">
-                    <h6 class="fw-bold mb-2" style="color: var(--accent-primary);">Live EMI Preview</h6>
-                    <div class="d-flex justify-content-between">
-                        <span style="color: var(--text-secondary);">Estimated Monthly EMI:</span>
-                        <strong id="previewEmi" class="fs-5 text-success">₹0.00</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mt-1">
-                        <span style="color: var(--text-secondary);">Total Payable Amount:</span>
-                        <strong id="previewTotal" style="color: var(--text-primary);">₹0.00</strong>
+                <div class="fg-form-section">
+                    <h2 class="fg-form-section-title">Financial Terms & Tenures</h2>
+                    <p class="fg-form-section-desc">Specify disbursement capital and repayment duration.</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="PrincipalAmount" class="fg-form-label">
+                                Principal Amount (₹) <span class="required text-danger">*</span>
+                            </label>
+                            <input asp-for="PrincipalAmount" id="PrincipalAmount" type="number" step="0.01" min="1"
+                                   class="form-control num-tabular calc-input" placeholder="e.g. 50000" required />
+                            <span asp-validation-for="PrincipalAmount" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="InterestRate" class="fg-form-label">
+                                Annual Interest Rate (%) <span class="required text-danger">*</span>
+                            </label>
+                            <input asp-for="InterestRate" id="InterestRate" type="number" step="0.01" min="0" max="100"
+                                   class="form-control num-tabular calc-input" placeholder="e.g. 12" required />
+                            <span asp-validation-for="InterestRate" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="TenureMonths" class="fg-form-label">
+                                Duration (Months) <span class="required text-danger">*</span>
+                            </label>
+                            <input asp-for="TenureMonths" id="TenureMonths" type="number" min="1" max="120"
+                                   class="form-control num-tabular calc-input" placeholder="e.g. 12" required />
+                            <span asp-validation-for="TenureMonths" class="text-danger small mt-1 d-block"></span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-4 text-end">
-                    <button type="submit" class="fg-btn-primary">Issue Loan</button>
+                <!-- Live EMI Preview Card -->
+                <div class="fg-preview-box">
+                    <div class="fg-preview-header">
+                        <i class="fa-solid fa-calculator me-1" aria-hidden="true"></i>
+                        Live EMI & Repayment Calculator
+                    </div>
+                    <div class="fg-preview-row">
+                        <span class="text-secondary">Estimated Monthly Installment (EMI):</span>
+                        <strong id="previewEmi" class="num-tabular text-dark fs-5">₹0.00</strong>
+                    </div>
+                    <div class="fg-preview-row">
+                        <span class="text-secondary">Total Scheduled Payable Amount:</span>
+                        <strong id="previewTotal" class="num-tabular text-secondary fw-semibold">₹0.00</strong>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-4">
+                    <a asp-action="Index" class="fg-btn fg-btn-secondary">Cancel</a>
+                    <button type="submit" class="fg-btn fg-btn-primary">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Disburse & Issue Loan</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
     <script>
-        document.querySelectorAll('.calc-input').forEach(item => {
-            item.addEventListener('input', function () {
-                let p = parseFloat(document.getElementById('PrincipalAmount').value) || 0;
-                let rateYearly = parseFloat(document.getElementById('InterestRate').value) || 0;
-                let n = Math.abs(parseInt(document.getElementById('TenureMonths').value)) || 0;
+        (function () {
+            const principalInput = document.getElementById('PrincipalAmount');
+            const rateInput = document.getElementById('InterestRate');
+            const tenureInput = document.getElementById('TenureMonths');
+            const previewEmi = document.getElementById('previewEmi');
+            const previewTotal = document.getElementById('previewTotal');
 
-                let r = (rateYearly / 12) / 100;
+            function updatePreview() {
+                const p = parseFloat(principalInput ? principalInput.value : 0) || 0;
+                const yearlyRate = parseFloat(rateInput ? rateInput.value : 0) || 0;
+                const n = Math.abs(parseInt(tenureInput ? tenureInput.value : 0, 10)) || 0;
+
+                const r = (yearlyRate / 12) / 100;
                 let emi = 0;
 
                 if (r > 0 && n > 0) {
@@ -80,14 +141,15 @@
                     emi = p / n;
                 }
 
-                document.getElementById('previewEmi').innerText = '₹' + emi.toFixed(2);
-                document.getElementById('previewTotal').innerText = '₹' + (emi * n).toFixed(2);
-            });
-        });
-    </script>
+                if (previewEmi) previewEmi.innerText = '₹' + emi.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                if (previewTotal) previewTotal.innerText = '₹' + (emi * n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
 
-    @section Scripts {
-        @{
-            await Html.RenderPartialAsync("_ValidationScriptsPartial");
-        }
-    }
+            document.querySelectorAll('.calc-input').forEach(item => {
+                item.addEventListener('input', updatePreview);
+            });
+
+            updatePreview();
+        })();
+    </script>
+}

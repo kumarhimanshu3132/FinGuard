@@ -1,0 +1,185 @@
+@model List<FinGuard.Models.BankAccount>
+
+@{
+    ViewData["Title"] = "Bank Accounts";
+    Layout = "_BorrowerLayout";
+    var customer = ViewBag.Customer as FinGuard.Models.Customer;
+}
+
+<div class="bp-mobile-shell">
+    <!-- Header & Action -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="fs-5 fw-bold text-dark mb-0">Bank Accounts</h1>
+            <p class="text-secondary small mb-0">Disbursement destinations & e-NACH auto-debit mandates</p>
+        </div>
+        <a asp-action="AddBankAccount" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3">
+            <i class="fa-solid fa-plus me-1"></i> Add Account
+        </a>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-success-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check text-success fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["Success"]</div>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-danger-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation text-danger fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["Error"]</div>
+        </div>
+    }
+
+    <!-- Security Advisory Banner -->
+    <div class="p-3 bg-light rounded-3 border mb-3 small d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+             style="width: 36px; height: 36px; background: rgba(79, 70, 229, 0.12); color: #4338ca; font-size: 1rem;">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="text-secondary" style="font-size: 0.76rem; line-height: 1.4;">
+            <strong>Bank-Grade AES-256 Encryption:</strong> Full account numbers are encrypted at rest. FinGuard never exposes full account credentials in client views or transmission logs.
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="d-flex flex-column gap-3 mb-4">
+            @foreach (var acc in Model)
+            {
+                <div class="bp-card p-3 p-md-4 mb-0 border shadow-sm position-relative @(acc.IsPrimary ? "border-primary" : "")">
+                    <!-- Top Ribbon -->
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="width: 38px; height: 38px; background: #e0e7ff; color: #1e3a8a; font-size: 1.1rem;">
+                                <i class="fa-solid fa-building-columns"></i>
+                            </div>
+                            <div>
+                                <h2 class="fs-6 fw-bold text-dark mb-0" style="font-size: 0.95rem;">@acc.BankName</h2>
+                                <span class="text-muted small" style="font-size: 0.72rem;">@acc.AccountType Account</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1">
+                            @if (acc.IsPrimary)
+                            {
+                                <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-star me-1"></i> Primary
+                                </span>
+                            }
+
+                            @if (acc.VerificationStatus == "Verified")
+                            {
+                                <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">
+                                    <span class="bp-badge-dot"></span> Verified
+                                </span>
+                            }
+                            else if (acc.VerificationStatus == "Pending")
+                            {
+                                <span class="bp-badge bp-badge-warning" style="font-size: 0.7rem;">
+                                    <span class="bp-badge-dot"></span> Pending Verification
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="bp-badge bp-badge-danger" style="font-size: 0.7rem;">
+                                    <span class="bp-badge-dot"></span> @acc.VerificationStatus
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Account Details Grid -->
+                    <div class="row g-2 mb-3 small">
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size: 0.72rem;">Masked Account No:</span>
+                            <strong class="text-dark font-monospace fs-6">@acc.MaskedAccountNumber</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size: 0.72rem;">IFSC Code:</span>
+                            <strong class="text-dark font-monospace">@acc.IFSCCode</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size: 0.72rem;">Account Holder:</span>
+                            <span class="text-dark fw-medium text-truncate d-block">@acc.AccountHolderName</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size: 0.72rem;">Branch:</span>
+                            <span class="text-dark fw-medium text-truncate d-block">@(string.IsNullOrWhiteSpace(acc.BranchName) ? "Main Branch" : acc.BranchName)</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 border-top gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            @if (!acc.IsPrimary)
+                            {
+                                <form asp-action="SetPrimaryBankAccount" asp-route-id="@acc.Id" method="post" class="m-0 p-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-light border py-1 px-2 fw-semibold" style="font-size: 0.75rem;">
+                                        <i class="fa-regular fa-star me-1 text-warning"></i> Set as Primary
+                                    </button>
+                                </form>
+                            }
+
+                            @if (acc.VerificationStatus == "Pending")
+                            {
+                                <!-- Demo Sandbox Verification Tool -->
+                                <form asp-action="VerifyBankAccountDemo" asp-route-id="@acc.Id" method="post" class="m-0 p-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2 fw-semibold" style="font-size: 0.75rem;" title="Simulate Penny Drop Verification for testing">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Verify (Demo Sandbox)
+                                    </button>
+                                </form>
+                            }
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <a asp-action="EditBankAccount" asp-route-id="@acc.Id" class="btn btn-sm btn-light border text-secondary py-1 px-2" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-pen me-1"></i> Edit
+                            </a>
+
+                            <form asp-action="DeleteBankAccount" asp-route-id="@acc.Id" method="post" class="m-0 p-0" onsubmit="return confirm('Are you sure you want to remove this bank account?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 border">
+            <div class="small text-secondary">
+                Ready for institutional disbursement? Check eligible approved loans.
+            </div>
+            <a asp-action="Disbursements" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3 text-nowrap">
+                Loan Disbursements &rarr;
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Empty State -->
+        <div class="bp-card p-5 text-center my-3 border shadow-sm">
+            <div class="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3"
+                 style="width: 56px; height: 56px; background: #e0e7ff; color: #1e3a8a; font-size: 1.5rem;">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <h2 class="fs-6 fw-bold text-dark mb-1">No Bank Accounts Linked</h2>
+            <p class="text-secondary small mb-3" style="max-width: 400px; margin: 0 auto;">
+                Link your savings or current bank account to receive approved microfinance loan disbursements directly via simulated IMPS.
+            </p>
+            <a asp-action="AddBankAccount" class="bp-btn bp-btn-primary py-2 px-4 fs-6">
+                <i class="fa-solid fa-plus me-1"></i> Add Bank Account
+            </a>
+        </div>
+    }
+</div>

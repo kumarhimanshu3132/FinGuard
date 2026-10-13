@@ -1,0 +1,281 @@
+@model FinGuard.Models.BorrowerProfileUpdateViewModel
+
+@{
+    ViewData["Title"] = "My Profile & Settings";
+    Layout = "_BorrowerLayout";
+    var customer = ViewBag.Customer as FinGuard.Models.Customer;
+    bool isEmailVerified = ViewBag.IsEmailVerified ?? false;
+    string initials = "U";
+    if (!string.IsNullOrWhiteSpace(Model.Name))
+    {
+        var parts = Model.Name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        initials = parts.Length > 1 ? $"{parts[0][0]}{parts[1][0]}".ToUpper() : parts[0][0].ToString().ToUpper();
+    }
+    // Safely masked bank account based on deterministic customer ID seed
+    int last4Bank = 1000 + (Model.CustomerId * 73 % 9000);
+}
+
+<div class="bp-mobile-shell">
+    <!-- Top Action / Greeting Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="fs-5 fw-bold text-dark mb-0">Profile & Settings</h1>
+            <p class="text-secondary small mb-0">Manage borrower credentials, privacy & mandate</p>
+        </div>
+        <a asp-controller="BorrowerAuth" asp-action="Logout" class="btn btn-sm btn-outline-danger px-3 py-1 fw-semibold" style="font-size: 0.8rem;">
+            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Sign Out
+        </a>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-success-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check text-success fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["Success"]</div>
+        </div>
+    }
+
+    @if (TempData["PasswordError"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-danger-subtle shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation text-danger fs-5 flex-shrink-0" aria-hidden="true"></i>
+            <div>@TempData["PasswordError"]</div>
+        </div>
+    }
+
+    <!-- 1. Hero Identity Card (mPokket style) -->
+    <div class="bp-card p-3 p-md-4 mb-3 border-0 shadow-sm" style="background: linear-gradient(135deg, #0b1f44 0%, #1e3a8a 100%); color: #fff;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold"
+                 style="width: 58px; height: 58px; background: rgba(255,255,255,0.18); border: 2px solid rgba(255,255,255,0.4); font-size: 1.35rem; color: #fff;">
+                @initials
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h2 class="fs-5 fw-bold text-white mb-0 text-truncate">@Model.Name</h2>
+                    <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1" style="font-size: 0.72rem;">#@Model.CustomerId</span>
+                </div>
+                <div class="text-white-50 small mt-1 text-truncate">
+                    <i class="fa-solid fa-envelope me-1" style="font-size: 0.75rem;"></i> @Model.Email
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                    @if (isEmailVerified)
+                    {
+                        <span class="badge bg-success bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-circle-check me-1"></i> Email Verified
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-clock me-1"></i> Email Pending
+                        </span>
+                    }
+
+                    <span class="badge bg-success bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                        <i class="fa-solid fa-mobile-screen-button me-1"></i> Mobile Verified
+                    </span>
+
+                    @if (customer?.KycStatus == "Verified")
+                    {
+                        <span class="badge bg-info bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-shield-check me-1"></i> KYC Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-shield-halved me-1"></i> KYC Pending
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Banking & Repayment Auto-Debit Mandate -->
+    <div class="bp-card p-3 mb-3 border shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-building-columns text-indigo me-1"></i> Disbursement & NACH Mandate
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="bp-badge bp-badge-success" style="font-size: 0.72rem;">
+                    <span class="bp-badge-dot"></span> Active
+                </span>
+                <a asp-action="BankAccounts" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                    Manage &rarr;
+                </a>
+            </div>
+        </div>
+        <div class="p-3 bg-light rounded-3 border">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-semibold text-dark small">State Bank of India</div>
+                    <div class="text-secondary small mt-1 font-monospace">
+                        A/C No: •••• •••• @last4Bank
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark border px-2 py-1 small">e-NACH Active</span>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem;">IFSC: SBIN0001***</div>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top text-muted small" style="font-size: 0.74rem;">
+                <i class="fa-solid fa-shield-halved text-success me-1"></i> Masked for privacy in compliance with RBI Digital Lending Directives.
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Demographic & Residential Details -->
+    <div class="bp-card p-3 p-md-4 mb-3 border shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-location-dot text-indigo me-1"></i> Residential & Location Details
+            </span>
+            <a asp-action="Kyc" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                Audit KYC &rarr;
+            </a>
+        </div>
+
+        <form asp-action="UpdateProfile" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="CustomerId" />
+
+            <div class="mb-3">
+                <label asp-for="Address" class="form-label small fw-semibold text-secondary">
+                    Permanent Residential Address *
+                </label>
+                <textarea asp-for="Address" rows="2" class="form-control form-control-sm" required></textarea>
+                <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
+                <div class="form-text small text-muted" style="font-size: 0.72rem;">Field coordinators utilize this address for Self-Help Group center meetings.</div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="PinCode" class="form-label small fw-semibold text-secondary">Postal PIN Code *</label>
+                    <input asp-for="PinCode" class="form-control form-control-sm"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" required />
+                    <span asp-validation-for="PinCode" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-semibold text-secondary">Registered Phone</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="@Model.Phone" readonly />
+                </div>
+            </div>
+
+            <button type="submit" class="bp-btn bp-btn-primary w-100 py-2" style="font-size: 0.85rem;">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Save Residential Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- 4. Security & Password Management -->
+    <div class="bp-card p-3 mb-3 border shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-bold text-dark small">
+                <i class="fa-solid fa-key text-indigo me-1"></i> Security & Password
+            </span>
+            <button class="btn btn-sm btn-link p-0 text-indigo fw-semibold text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#changePasswordForm" style="font-size: 0.78rem;">
+                Modify Password
+            </button>
+        </div>
+
+        <div class="collapse" id="changePasswordForm">
+            <form asp-action="ChangePassword" method="post" class="pt-2 border-top mt-2">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Current Password *</label>
+                    <input type="password" name="CurrentPassword" class="form-control form-control-sm" placeholder="••••••••" required />
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold text-secondary mb-1">New Password (min 8 chars) *</label>
+                    <input type="password" name="NewPassword" class="form-control form-control-sm" placeholder="••••••••" required minlength="8" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Confirm New Password *</label>
+                    <input type="password" name="ConfirmNewPassword" class="form-control form-control-sm" placeholder="••••••••" required minlength="8" />
+                </div>
+
+                <button type="submit" class="bp-btn bp-btn-secondary w-100 py-2" style="font-size: 0.82rem;">
+                    <i class="fa-solid fa-lock me-1"></i> Update Portal Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Notification Preferences -->
+    <div class="bp-card p-3 mb-3 border shadow-sm">
+        <div class="fw-bold text-dark small mb-2">
+            <i class="fa-solid fa-bell text-indigo me-1"></i> Notification Preferences
+        </div>
+        <div class="d-flex flex-column gap-2 small">
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                <div>
+                    <div class="fw-semibold text-dark">SMS Due Date Alerts</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Reminders sent 3 days before EMI due date</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" checked id="prefSms">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                <div>
+                    <div class="fw-semibold text-dark">WhatsApp Repayment Receipts</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Instant payment receipts via WhatsApp</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" checked id="prefWa">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                <div>
+                    <div class="fw-semibold text-dark">Pre-Approved Loan Offers</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Notifications on credit limit increases</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="prefPromo">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Borrower Rights & Fair Practices Code (RBI Microfinance Directive) -->
+    <div class="bp-card p-3 mb-3 border shadow-sm">
+        <div class="fw-bold text-dark small mb-2">
+            <i class="fa-solid fa-scale-balanced text-indigo me-1"></i> Borrower Rights & Fair Lending
+        </div>
+        <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.5;">
+            <p class="mb-2">Under the <strong>RBI Master Direction on Regulatory Framework for Microfinance Loans (2022)</strong>:</p>
+            <ul class="mb-2 ps-3 d-flex flex-column gap-1">
+                <li>No prepayment penalties for early closure of loans.</li>
+                <li>Key Fact Statement (KFS) provided in vernacular format before disbursement.</li>
+                <li>Collections strictly during daytime business hours (8:00 AM – 7:00 PM).</li>
+                <li>Dedicated Grievance Redressal Officer accessible at any time.</li>
+            </ul>
+            <div class="p-2 rounded bg-light border text-muted" style="font-size: 0.72rem;">
+                <strong>Grievance Officer:</strong> Mr. Rajesh Sharma | Email: grievance@finguard.in | Helpline: 1800-208-4821
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Help, Support & Quick Links -->
+    <div class="d-grid gap-2 mb-4">
+        <a asp-action="Support" class="bp-btn bp-btn-secondary text-center py-2" style="font-size: 0.85rem;">
+            <i class="fa-solid fa-headset me-1 text-indigo"></i> Help & Support Center
+        </a>
+        <a asp-controller="BorrowerAuth" asp-action="Logout" class="btn btn-outline-danger py-2 fw-semibold" style="font-size: 0.85rem;">
+            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Sign Out of FinGuard
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,219 @@
+@model FinGuard.Models.Customer
+
+@{
+    ViewData["Title"] = "Notifications";
+    Layout = "_BorrowerLayout";
+    var activeLoans = Model?.Loans?.Where(l => l.Status == "Active").ToList() ?? new();
+    var pendingLoans = Model?.Loans?.Where(l => l.Status == "Pending").ToList() ?? new();
+    var recentRepayments = ViewBag.RecentRepayments as List<FinGuard.Models.Repayment> ?? new();
+    
+    int totalAlerts = activeLoans.Count + pendingLoans.Count + recentRepayments.Count + 1; // +1 for KYC status
+}
+
+<div class="bp-mobile-shell">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="fs-5 fw-bold text-dark mb-0">Notifications</h1>
+                <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 0.75rem;">@totalAlerts</span>
+            </div>
+            <p class="text-secondary small mb-0">Activity updates, payment alerts & reminders</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-light border px-2 py-1 small" onclick="markAllRead()" style="font-size: 0.78rem;">
+            <i class="fa-solid fa-check-double me-1 text-muted"></i> Mark all read
+        </button>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="d-flex gap-2 mb-3 overflow-auto pb-1" style="white-space: nowrap;">
+        <button class="btn btn-sm bp-tab-btn active px-3 py-1 fw-semibold filter-btn" data-filter="all" style="font-size: 0.8rem;">
+            All (@totalAlerts)
+        </button>
+        <button class="btn btn-sm bp-tab-btn px-3 py-1 fw-semibold filter-btn" data-filter="payment" style="font-size: 0.8rem;">
+            Payments (@(activeLoans.Count + recentRepayments.Count))
+        </button>
+        <button class="btn btn-sm bp-tab-btn px-3 py-1 fw-semibold filter-btn" data-filter="loan" style="font-size: 0.8rem;">
+            Loans (@(pendingLoans.Count))
+        </button>
+        <button class="btn btn-sm bp-tab-btn px-3 py-1 fw-semibold filter-btn" data-filter="security" style="font-size: 0.8rem;">
+            Security & KYC
+        </button>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="d-flex flex-column gap-2" id="notificationsFeed">
+        <!-- 1. Active Loan Installment Reminders -->
+        @foreach (var loan in activeLoans)
+        {
+            <div class="bp-card p-3 mb-0 border shadow-sm notify-item notify-payment">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                         style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 1.1rem;">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.68rem;">EMI Due</span>
+                            <span class="text-muted small" style="font-size: 0.72rem;">@loan.NextDueDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <h2 class="fs-6 fw-bold text-dark mb-1" style="font-size: 0.92rem;">
+                            Upcoming EMI for Facility #@loan.LoanId
+                        </h2>
+                        <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                            Installment of <strong>₹@loan.EMIAmount.ToString("N2")</strong> is due on <strong>@loan.NextDueDate.ToString("dd MMMM yyyy")</strong>. Ensure sufficient balance for timely clearance.
+                        </p>
+                        <div class="d-flex align-items-center gap-2">
+                            <a asp-action="LoanDetails" asp-route-id="@loan.LoanId" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3 text-decoration-none" style="font-size: 0.75rem;">
+                                Pay Now
+                            </a>
+                            <a asp-action="Schedule" asp-route-id="@loan.LoanId" class="bp-btn bp-btn-secondary bp-btn-sm py-1 px-2 text-decoration-none" style="font-size: 0.75rem;">
+                                View Schedule
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- 2. Recent Repayment Success Receipts -->
+        @foreach (var rep in recentRepayments)
+        {
+            <div class="bp-card p-3 mb-0 border shadow-sm notify-item notify-payment">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                         style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 1.1rem;">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="badge bg-success bg-opacity-75 text-white rounded-pill" style="font-size: 0.68rem;">Payment Credited</span>
+                            <span class="text-muted small" style="font-size: 0.72rem;">@rep.PaymentDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <h2 class="fs-6 fw-bold text-dark mb-1" style="font-size: 0.92rem;">
+                            Repayment of ₹@rep.AmountPaid.ToString("N2") Successful
+                        </h2>
+                        <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                            Payment against Facility #@rep.LoanId has been confirmed and updated in your ledger.
+                        </p>
+                        <a asp-action="Repayments" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                            View Payment Receipt &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- 3. Pending Loan Applications -->
+        @foreach (var pending in pendingLoans)
+        {
+            <div class="bp-card p-3 mb-0 border shadow-sm notify-item notify-loan">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                         style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.12); color: #2563eb; font-size: 1.1rem;">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="badge bg-info bg-opacity-75 text-white rounded-pill" style="font-size: 0.68rem;">Under Appraisal</span>
+                            <span class="text-muted small" style="font-size: 0.72rem;">APP-#@pending.LoanId</span>
+                        </div>
+                        <h2 class="fs-6 fw-bold text-dark mb-1" style="font-size: 0.92rem;">
+                            Loan Application of ₹@pending.PrincipalAmount.ToString("N2") in Review
+                        </h2>
+                        <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                            Your loan application is currently under institutional appraisal. Our field coordinator will review your verification details.
+                        </p>
+                        <a asp-action="Applications" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                            Track Status &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- 4. KYC Status Notification -->
+        <div class="bp-card p-3 mb-0 border shadow-sm notify-item notify-security">
+            <div class="d-flex align-items-start gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                     style="width: 40px; height: 40px; background: @(Model?.KycStatus == "Verified" ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)"); color: @(Model?.KycStatus == "Verified" ? "#059669" : "#d97706"); font-size: 1.1rem;">
+                    <i class="fa-solid @(Model?.KycStatus == "Verified" ? "fa-shield-check" : "fa-shield-halved")"></i>
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge @(Model?.KycStatus == "Verified" ? "bg-success" : "bg-warning text-dark") rounded-pill" style="font-size: 0.68rem;">
+                            @(Model?.KycStatus == "Verified" ? "Compliance Active" : "Action Required")
+                        </span>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Account Security</span>
+                    </div>
+                    <h2 class="fs-6 fw-bold text-dark mb-1" style="font-size: 0.92rem;">
+                        @(Model?.KycStatus == "Verified" ? "KYC Verification Active & Confirmed" : "Complete KYC Demographic Verification")
+                    </h2>
+                    <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                        @(Model?.KycStatus == "Verified"
+                            ? "Your borrower identity record meets all RBI digital microfinance guidelines."
+                            : "Submit your original government identification at your next center meeting to unlock enhanced credit limits.")
+                    </p>
+                    <a asp-action="Kyc" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                        View KYC Standing &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Security & Two-Factor Alert -->
+        <div class="bp-card p-3 mb-0 border shadow-sm notify-item notify-security">
+            <div class="d-flex align-items-start gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                     style="width: 40px; height: 40px; background: rgba(79, 70, 229, 0.12); color: #4338ca; font-size: 1.1rem;">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge bg-indigo text-white rounded-pill" style="font-size: 0.68rem; background-color: #4f46e5;">Email OTP Active</span>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Security</span>
+                    </div>
+                    <h2 class="fs-6 fw-bold text-dark mb-1" style="font-size: 0.92rem;">
+                        6-Digit Email Verification Guard
+                    </h2>
+                    <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                        Your account is secured with 6-digit email OTP authorization. All critical actions trigger verification codes sent exclusively to your registered inbox.
+                    </p>
+                    <a asp-action="Profile" class="small text-indigo fw-semibold text-decoration-none" style="font-size: 0.78rem;">
+                        Manage Security &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.getAttribute('data-filter');
+                document.querySelectorAll('.notify-item').forEach(item => {
+                    if (filter === 'all') {
+                        item.style.display = 'block';
+                    } else if (item.classList.contains('notify-' + filter)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        function markAllRead() {
+            document.querySelectorAll('.notify-item').forEach(item => {
+                item.style.opacity = '0.75';
+            });
+            const badge = document.querySelector('.badge.bg-primary');
+            if (badge) badge.innerText = '0';
+        }
+    </script>
+}

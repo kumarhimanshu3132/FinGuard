@@ -1,0 +1,151 @@
+@model FinGuard.Models.BorrowerLoginViewModel
+
+@{
+    ViewData["Title"] = "Sign In - FinGuard";
+    Layout = "_BorrowerLayout";
+}
+
+<div class="row justify-content-center py-4 py-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <div class="bp-card p-4 p-md-5">
+            <!-- Brand Identity & Unified Access Message -->
+            <div class="text-center mb-4">
+                <div class="bp-brand-icon mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.35rem;">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                </div>
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light border rounded-pill mb-2 small text-secondary fw-semibold">
+                    <i class="fa-solid fa-lock text-indigo"></i> Unified Secure Access
+                </div>
+                <h1 class="fs-4 fw-bold text-dark mb-1">Sign In to FinGuard</h1>
+                <p class="text-secondary small mb-0">Enter your registered email and password to automatically access your dashboard.</p>
+            </div>
+
+            <!-- Feedback Notifications -->
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-danger-subtle" role="alert">
+                    <i class="fa-solid fa-circle-exclamation mt-1 flex-shrink-0 text-danger" aria-hidden="true"></i>
+                    <div>@ViewBag.Error</div>
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-success-subtle" role="alert">
+                    <i class="fa-solid fa-circle-check mt-1 flex-shrink-0 text-success" aria-hidden="true"></i>
+                    <div>@TempData["Success"]</div>
+                </div>
+            }
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="alert alert-info d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 p-3 mb-4 rounded-3 small border-info-subtle">
+                    <div>
+                        <i class="fa-solid fa-circle-user me-1 text-primary"></i>
+                        Currently signed in as: <strong>@User.Identity?.Name</strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                        {
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                <i class="fa-solid fa-gauge me-1"></i> Operations Dashboard
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Portal" asp-action="Dashboard" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                <i class="fa-solid fa-house me-1"></i> Client Dashboard
+                            </a>
+                        }
+                        <a asp-action="Logout" class="btn btn-sm btn-outline-danger py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Sign Out
+                        </a>
+                    </div>
+                </div>
+            }
+
+            <!-- Unified Sign In Form -->
+            <form asp-action="Login" method="post" id="unifiedSignInForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <!-- Email Input -->
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                        </span>
+                        <input asp-for="Email" type="email" class="form-control border-start-0"
+                               placeholder="name@example.com" autocomplete="email" required autofocus />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <!-- Password Input -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label asp-for="Password" class="form-label small fw-semibold text-secondary mb-0">Password</label>
+                        <a asp-action="ForgotPassword" class="small text-decoration-none text-indigo fw-medium">Forgot password?</a>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        </span>
+                        <input asp-for="Password" type="password" id="unifiedPasswordInput"
+                               class="form-control border-start-0 border-end-0" placeholder="••••••••"
+                               autocomplete="current-password" required />
+                        <button type="button" class="btn btn-outline-secondary border-start-0 bp-toggle-password"
+                                data-target="unifiedPasswordInput" aria-label="Toggle password visibility">
+                            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <!-- Remember Session -->
+                <div class="mb-4 form-check">
+                    <input asp-for="RememberMe" class="form-check-input" id="rememberSessionCheck" />
+                    <label class="form-check-label small text-secondary" for="rememberSessionCheck">Remember this device</label>
+                </div>
+
+                <!-- Primary Sign In Action -->
+                <button type="submit" id="btnSubmitSignIn" class="bp-btn bp-btn-primary w-100 py-2 fs-6 mb-3">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1" aria-hidden="true"></i> Sign In
+                </button>
+            </form>
+
+            <!-- Borrower Registration Action -->
+            <div class="text-center pt-3 border-top">
+                <a asp-action="Register" class="bp-btn bp-btn-secondary w-100 py-2 text-decoration-none fs-6">
+                    <i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i> Create Borrower Account
+                </a>
+            </div>
+
+            <!-- Intelligent Routing Indicator Notice -->
+            <div class="mt-4 pt-3 border-top text-center text-muted" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-route text-indigo me-1"></i>
+                Smart Role Verification: Automatically routes administrators to the Operations Dashboard and borrowers to the Client Portal.
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('unifiedSignInForm');
+            const submitBtn = document.getElementById('btnSubmitSignIn');
+
+            if (form && submitBtn) {
+                form.addEventListener('submit', function () {
+                    if (form.checkValidity()) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Signing In...';
+                    }
+                });
+            }
+        });
+    </script>
+}

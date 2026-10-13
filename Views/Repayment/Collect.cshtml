@@ -1,39 +1,66 @@
 @model FinGuard.Models.Repayment
+
 @{
-    ViewData["Title"] = "Collect EMI";
+    ViewData["Title"] = "Collect Installment";
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-4 p-4">
-            <h4 class="fw-bold mb-4 text-dark">Collect Payment</h4>
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-receipt text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Record EMI Collection Voucher
+        </h1>
+        <p class="fg-page-subtitle">Submit installment receipt for Loan Account #@Model.LoanId.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Index" class="fg-btn fg-btn-secondary fg-btn-sm">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span>Back to Collections</span>
+        </a>
+    </div>
+</div>
 
-            <div class="alert alert-info rounded-3 mb-4">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-semibold">Loan ID:</span>
-                    <span class="fw-bold">#@Model.LoanId</span>
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="fg-card">
+            <!-- Account Summary Card -->
+            <div class="p-3 bg-light border rounded-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-secondary small fw-medium">Loan Account Number:</span>
+                    <span class="fg-row-id fs-6">#@Model.LoanId</span>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <span class="fw-semibold">Current Remaining Balance:</span>
-                    <span class="fw-bold text-danger">₹@ViewBag.RemainingBalance</span>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-secondary small fw-medium">Original Principal:</span>
+                    <span class="num-tabular fw-semibold text-dark">₹@((ViewBag.Principal is decimal p) ? p.ToString("N2") : ViewBag.Principal)</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="text-secondary small fw-medium">Remaining Outstanding Balance:</span>
+                    <strong class="num-tabular text-danger fs-6">₹@((ViewBag.RemainingBalance is decimal r) ? r.ToString("N2") : ViewBag.RemainingBalance)</strong>
                 </div>
             </div>
 
             <form asp-action="Collect" method="post">
+                @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="LoanId" />
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold">Amount to Collect (₹)</label>
-                    <input asp-for="AmountPaid" class="form-control form-control-lg rounded-3" required />
-                    <span asp-validation-for="AmountPaid" class="text-danger small"></span>
+                    <label asp-for="AmountPaid" class="fg-form-label">
+                        Amount to Collect (₹) <span class="required text-danger">*</span>
+                    </label>
+                    <input asp-for="AmountPaid" type="number" step="0.01" min="1"
+                           class="form-control form-control-lg num-tabular fw-bold text-dark"
+                           placeholder="Enter collection amount" required />
+                    <span asp-validation-for="AmountPaid" class="text-danger small mt-1 d-block"></span>
+                    <div class="fg-input-hint">Collected amount will be automatically deducted from remaining balance.</div>
                 </div>
 
-                <div class="d-flex gap-3">
-                    <button type="submit" class="btn btn-success flex-grow-1 py-2 fw-bold rounded-pill"
-                            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border:none;">
-                        Confirm Payment
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2">
+                    <a asp-action="Index" class="fg-btn fg-btn-secondary">Cancel</a>
+                    <button type="submit" class="fg-btn fg-btn-success">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Confirm Receipt & Deduct Balance</span>
                     </button>
-                    <a asp-action="Index" class="btn btn-light px-4 py-2 fw-bold rounded-pill border">Cancel</a>
                 </div>
             </form>
         </div>
@@ -41,7 +68,5 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }

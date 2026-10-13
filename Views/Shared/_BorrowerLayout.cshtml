@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FinGuard Borrower Portal</title>
+
+    <!-- Bootstrap 5 Grid and Framework -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Inter Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Borrower Portal Design System -->
+    <link rel="stylesheet" href="~/css/borrower-portal.css" asp-append-version="true" />
+</head>
+<body class="borrower-portal">
+    @{
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        bool isBorrowerAuth = User.Identity?.IsAuthenticated == true && User.IsInRole("Borrower");
+        var customerId = User.FindFirst("CustomerId")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    @if (isBorrowerAuth)
+    {
+        <!-- Fixed Left Sidebar for Authenticated Borrower -->
+        <aside class="bp-sidebar" id="bpSidebar">
+            <div class="bp-sidebar-brand">
+                <a class="bp-brand" asp-controller="Portal" asp-action="Dashboard">
+                    <div class="bp-brand-icon">
+                        <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
+                    </div>
+                    <span>FinGuard</span>
+                    <span class="bp-brand-badge">Borrower</span>
+                </a>
+                <button class="btn btn-sm text-white d-lg-none p-1" id="bpSidebarCloseBtn" type="button" aria-label="Close sidebar">
+                    <i class="fa-solid fa-xmark fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="bp-sidebar-content">
+                <!-- Core Banking Navigation -->
+                <div>
+                    <div class="bp-sidebar-section-title">Core Banking</div>
+                    <ul class="bp-sidebar-nav">
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Dashboard" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Dashboard">
+                                <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Apply" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Apply">
+                                <i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i>
+                                <span>Apply for Loan</span>
+                                <span class="bp-sidebar-badge">Fast</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Applications" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Applications">
+                                <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                                <span>Applications</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Loans" || currentAction == "LoanDetails" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Loans">
+                                <i class="fa-solid fa-file-invoice" aria-hidden="true"></i>
+                                <span>My Loans</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "BankAccounts" || currentAction == "AddBankAccount" || currentAction == "EditBankAccount" ? "active" : "")"
+                               asp-controller="Portal" asp-action="BankAccounts">
+                                <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
+                                <span>Bank Accounts</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Disbursements" || currentAction == "DisburseLoan" || currentAction == "DisbursementReceipt" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Disbursements">
+                                <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i>
+                                <span>Disbursements</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Operations & Service -->
+                <div>
+                    <div class="bp-sidebar-section-title">Collections & Status</div>
+                    <ul class="bp-sidebar-nav">
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Schedule" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Schedule">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <span>EMI Schedule</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Repayments" || currentAction == "Receipt" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Repayments">
+                                <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                                <span>Repayments</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Kyc" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Kyc">
+                                <i class="fa-solid fa-id-card-clip" aria-hidden="true"></i>
+                                <span>KYC Status</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Support" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Support">
+                                <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+                                <span>Help & Support</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Fixed Sidebar Footer Profile -->
+            <div class="bp-sidebar-footer">
+                <div class="bp-sidebar-user-card">
+                    <div class="bp-sidebar-user-avatar">
+                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "B")
+                    </div>
+                    <div class="bp-sidebar-user-info">
+                        <div class="bp-sidebar-user-name">@User.Identity?.Name</div>
+                        <div class="bp-sidebar-user-id">Borrower ID: #@customerId</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-1">
+                    <a asp-controller="Portal" asp-action="Profile" class="bp-sidebar-action-btn">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>My Profile</span>
+                    </a>
+                    <form asp-controller="BorrowerAuth" asp-action="Logout" method="post" class="m-0 p-0">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="bp-sidebar-action-btn danger">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                            <span>Sign Out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sidebar Backdrop for Mobile Screens -->
+        <div class="bp-sidebar-backdrop" id="bpSidebarBackdrop"></div>
+
+        <!-- Main Content Area -->
+        <div class="bp-content-wrapper">
+            <!-- Mobile-First Sticky Top App Bar (mPokket style - Phones only) -->
+            <header class="bp-m-header d-lg-none no-print">
+                <a asp-controller="Portal" asp-action="Profile" class="bp-m-avatar" title="View Profile">
+                    @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "₹")
+                </a>
+                <div class="bp-m-greeting">Welcome @(User.Identity?.Name?.Split(' ').FirstOrDefault() ?? User.Identity?.Name)!</div>
+                <a asp-controller="Portal" asp-action="Notifications" class="bp-m-icon-btn" title="Notifications">
+                    <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                    <span class="bp-m-badge-dot"></span>
+                </a>
+            </header>
+
+            <!-- Desktop Sleek Top Header Bar (Laptops/Desktops only) -->
+            <header class="bp-topbar d-none d-lg-flex no-print">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small fw-medium">
+                            <i class="fa-solid fa-lock text-success me-1"></i> Institutional Microfinance Portal
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <a asp-controller="Portal" asp-action="Notifications" class="btn btn-sm text-secondary p-2 position-relative"
+                       title="Notifications">
+                        <i class="fa-solid fa-bell fa-lg"></i>
+                        <span class="position-absolute top-1 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">New alerts</span>
+                        </span>
+                    </a>
+
+                    <a asp-controller="Portal" asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm">
+                        <i class="fa-solid fa-plus me-1"></i> Apply for Loan
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2 rounded-pill"
+                                type="button" id="bpTopMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="bp-user-avatar" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                                @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "B")
+                            </span>
+                            <span class="small fw-semibold text-dark">@User.Identity?.Name</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="bpTopMenu" style="border-radius: 10px;">
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Profile"><i class="fa-solid fa-user me-2 text-muted"></i>Profile</a></li>
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="BankAccounts"><i class="fa-solid fa-building-columns me-2 text-muted"></i>Bank Accounts</a></li>
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Disbursements"><i class="fa-solid fa-money-bill-transfer me-2 text-muted"></i>Disbursements</a></li>
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Applications"><i class="fa-solid fa-list-check me-2 text-muted"></i>Applications</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <form asp-controller="BorrowerAuth" asp-action="Logout" method="post" class="m-0 p-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item small text-danger"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Sign Out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Canvas -->
+            <main role="main" class="bp-main">
+                @RenderBody()
+            </main>
+
+            <!-- Desktop Footer (Hidden on mobile to prioritize bottom nav) -->
+            <footer class="py-4 border-top bg-white mt-auto d-none d-lg-block no-print">
+                <div class="container-fluid px-4">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-6 text-center text-md-start">
+                            <span class="fw-bold text-dark me-2">FinGuard</span>
+                            <span class="text-secondary small">&copy; 2026 Microfinance Digital Lending Portal. All rights reserved.</span>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="d-inline-flex gap-3 small">
+                                <a asp-controller="Portal" asp-action="Support" class="text-secondary text-decoration-none">Customer Support</a>
+                                <a asp-controller="Portal" asp-action="PaymentStatus" class="text-secondary text-decoration-none">Center Repayments</a>
+                                <a asp-controller="Home" asp-action="Privacy" class="text-secondary text-decoration-none">Privacy & Terms</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
+            <!-- Mobile Safe-Area Fixed 5-Destination Bottom Navigation (Phones Only) -->
+            <nav class="bp-bottom-navbar d-lg-none no-print" aria-label="Mobile Navigation">
+                <a asp-controller="Portal" asp-action="Dashboard" class="bp-bnav-item @(currentAction == "Dashboard" ? "active" : "")">
+                    <i class="fa-solid fa-house" aria-hidden="true"></i>
+                    <span>Home</span>
+                </a>
+                <a asp-controller="Portal" asp-action="Loans" class="bp-bnav-item @(currentAction == "Loans" || currentAction == "LoanDetails" ? "active" : "")">
+                    <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                    <span>Loans</span>
+                </a>
+                <a asp-controller="Portal" asp-action="Repayments" class="bp-bnav-item @(currentAction == "Repayments" || currentAction == "Schedule" || currentAction == "Receipt" ? "active" : "")">
+                    <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                    <span>Payments</span>
+                </a>
+                <a asp-controller="Portal" asp-action="Notifications" class="bp-bnav-item @(currentAction == "Notifications" ? "active" : "")" aria-label="Notifications">
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                    <span>Notifications</span>
+                </a>
+                <a asp-controller="Portal" asp-action="Profile" class="bp-bnav-item @(currentAction == "Profile" || currentAction == "Kyc" ? "active" : "")">
+                    <i class="fa-solid fa-user" aria-hidden="true"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
+        </div>
+    }
+    else
+    {
+        <!-- Public Navigation Header for Landing & Authentication Pages -->
+        <header class="bp-navbar">
+            <div class="bp-nav-container">
+                <a class="bp-brand" asp-controller="Portal" asp-action="Landing">
+                    <div class="bp-brand-icon">
+                        <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
+                    </div>
+                    <span>FinGuard</span>
+                    <span class="bp-brand-badge">Portal</span>
+                </a>
+
+                <div class="d-flex align-items-center gap-3 ms-auto">
+                    @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+                    {
+                        <a asp-controller="Home" asp-action="Index" class="bp-btn bp-btn-primary bp-btn-sm">
+                            <i class="fa-solid fa-gauge" aria-hidden="true"></i> Admin Console
+                        </a>
+                        <a asp-controller="Auth" asp-action="Logout" class="bp-btn bp-btn-outline bp-btn-sm">
+                            <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                        </a>
+                    }
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Canvas for Public Pages -->
+        <main role="main" class="bp-main">
+            @RenderBody()
+        </main>
+
+        <!-- Footer for Public Pages -->
+        <footer class="py-4 border-top bg-white mt-auto no-print">
+            <div class="container" style="max-width: 1240px;">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6 text-center text-md-start">
+                        <span class="fw-bold text-dark me-2">FinGuard</span>
+                        <span class="text-secondary small">&copy; 2026 Microfinance Digital Lending Portal. All rights reserved.</span>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <div class="d-inline-flex gap-3 small">
+                            <a asp-controller="Portal" asp-action="Support" class="text-secondary text-decoration-none">Customer Support</a>
+                            <a asp-controller="Portal" asp-action="PaymentStatus" class="text-secondary text-decoration-none">Center Repayments</a>
+                            <a asp-controller="Home" asp-action="Privacy" class="text-secondary text-decoration-none">Privacy & Terms</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    }
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/borrower-portal.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

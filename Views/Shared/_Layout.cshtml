@@ -3,94 +3,263 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - FinGuard</title>
-    <!-- Bootstrap for Grid and core structure -->
+    <title>@ViewData["Title"] - FinGuard Operations</title>
+
+    <!-- Bootstrap 5 Grid and Framework Utilities -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- FontAwesome for modern icons -->
+    <!-- FontAwesome 6 Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
+    <!-- Inter Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FinGuard Design System -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/FinGuard.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header class="fg-navbar">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a class="fg-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                <i class="fa-solid fa-shield-halved"></i> FinGuard
-            </a>
-            
-            <nav class="d-flex gap-2 align-items-center">
-                <a class="fg-nav-link" asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
-                <a class="fg-nav-link" asp-area="" asp-controller="Customer" asp-action="Index">Customers</a>
-                <a class="fg-nav-link" asp-area="" asp-controller="Loan" asp-action="Index">Loans</a>
-                <a class="fg-nav-link" asp-area="" asp-controller="Repayment" asp-action="Index">Collections</a>
-                
-                @if (User.Identity!.IsAuthenticated)
-                {
-                    <div class="dropdown ms-3 pl-3 border-start">
-                        <a class="fg-nav-link dropdown-toggle" href="#" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-user-circle"></i> @User.Identity.Name
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end fg-card p-2" aria-labelledby="profileDropdown">
-                            <li><a class="dropdown-item rounded" asp-controller="Profile" asp-action="Index">My Profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        bool isAdminAuth = User.Identity != null && User.Identity.IsAuthenticated;
+        var initials = !string.IsNullOrEmpty(User.Identity?.Name) && User.Identity.Name.Length >= 2
+            ? User.Identity.Name.Substring(0, 2).ToUpper()
+            : "AD";
+    }
+
+    @if (isAdminAuth)
+    {
+        <!-- Fixed Left Sidebar for Admin Operations Console -->
+        <aside class="fg-sidebar" id="fgSidebar">
+            <div class="fg-sidebar-brand">
+                <a class="fg-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <div class="fg-brand-icon">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    </div>
+                    <span class="fg-brand-title">FinGuard</span>
+                    <span class="fg-brand-tag">Admin</span>
+                </a>
+                <button class="btn btn-sm text-white d-lg-none p-1" id="fgSidebarCloseBtn" type="button" aria-label="Close sidebar">
+                    <i class="fa-solid fa-xmark fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="fg-sidebar-content">
+                <!-- Core Operations Navigation -->
+                <div>
+                    <div class="fg-sidebar-section-title">Core Management</div>
+                    <ul class="fg-sidebar-nav">
+                        <li>
+                            <a class="fg-sidebar-link @(currentController == "Home" ? "active" : "")"
+                               asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="fg-sidebar-link @(currentController == "Customer" ? "active" : "")"
+                               asp-area="" asp-controller="Customer" asp-action="Index">
+                                <i class="fa-solid fa-users" aria-hidden="true"></i>
+                                <span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="fg-sidebar-link @(currentController == "Loan" ? "active" : "")"
+                               asp-area="" asp-controller="Loan" asp-action="Index">
+                                <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+                                <span>Loans</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="fg-sidebar-link @(currentController == "Repayment" ? "active" : "")"
+                               asp-area="" asp-controller="Repayment" asp-action="Index">
+                                <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+                                <span>Collections</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- External Portals -->
+                <div>
+                    <div class="fg-sidebar-section-title">External Portals</div>
+                    <ul class="fg-sidebar-nav">
+                        <li>
+                            <a class="fg-sidebar-link" asp-controller="Portal" asp-action="Landing">
+                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                <span>Borrower Portal</span>
+                                <span class="fg-sidebar-badge">Client</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Fixed Sidebar Footer Profile -->
+            <div class="fg-sidebar-footer">
+                <div class="fg-sidebar-user-card">
+                    <div class="fg-sidebar-user-avatar">@initials</div>
+                    <div class="fg-sidebar-user-info">
+                        <div class="fg-sidebar-user-name">@User.Identity?.Name</div>
+                        <div class="fg-sidebar-user-id">Operations Officer</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-1">
+                    <a asp-controller="Profile" asp-action="Index" class="fg-sidebar-action-btn">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>My Profile</span>
+                    </a>
+                    <button type="button" class="fg-sidebar-action-btn danger" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sidebar Backdrop for Mobile Screens -->
+        <div class="fg-sidebar-backdrop" id="fgSidebarBackdrop"></div>
+
+        <!-- Main Content Area -->
+        <div class="fg-app-wrapper">
+            <!-- Topbar -->
+            <header class="fg-topbar no-print">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" id="fgSidebarToggleBtn" aria-label="Toggle navigation">
+                        <i class="fa-solid fa-bars fa-lg"></i>
+                    </button>
+                    <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small fw-medium d-none d-sm-inline-block">
+                        <i class="fa-solid fa-shield-halved text-primary me-1"></i> Operations Management Console
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <a asp-controller="Portal" asp-action="Landing" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-none d-md-inline-flex align-items-center gap-1" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-external-link-alt"></i> Client Portal
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="fg-user-toggle dropdown-toggle" type="button" id="fgTopProfileDropdown"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="fg-user-avatar" aria-hidden="true">@initials</span>
+                            <span class="d-none d-sm-inline">@User.Identity?.Name</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end fg-dropdown-menu" aria-labelledby="fgTopProfileDropdown">
                             <li>
-                                <button type="button" class="dropdown-item rounded text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                                <a class="dropdown-item fg-dropdown-item" asp-controller="Profile" asp-action="Index">
+                                    <i class="fa-solid fa-user me-2 text-muted" aria-hidden="true"></i>
+                                    <span>My Profile</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <button type="button" class="dropdown-item fg-dropdown-item text-danger"
+                                        data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-2" aria-hidden="true"></i>
+                                    <span>Sign Out</span>
                                 </button>
                             </li>
                         </ul>
                     </div>
-                }
-            </nav>
-        </div>
-    </header>
+                </div>
+            </header>
 
-    <div class="container flex-grow-1 d-flex flex-column">
-        <main role="main" class="pb-5 pt-4 flex-grow-1">
+            <!-- Main Content Canvas -->
+            <main role="main" class="fg-main-container" id="mainContent">
+                @RenderBody()
+            </main>
+
+            <!-- Restrained Enterprise Footer -->
+            <footer class="fg-footer" role="contentinfo">
+                <div class="fg-footer-container">
+                    <div>
+                        <span>&copy; 2026 FinGuard Microfinance Operations.</span>
+                    </div>
+                    <div class="fg-footer-links">
+                        <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                        <a href="#mainContent">Terms of Service</a>
+                        <a href="#mainContent">Help Desk</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    }
+    else
+    {
+        <!-- Public Fallback Header -->
+        <header class="fg-navbar">
+            <div class="fg-nav-container">
+                <a class="fg-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <div class="fg-brand-icon">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    </div>
+                    <span class="fg-brand-title">FinGuard</span>
+                </a>
+            </div>
+        </header>
+
+        <main role="main" class="fg-main-container" id="mainContent">
             @RenderBody()
         </main>
-    </div>
+    }
 
-    <footer class="fg-footer mt-auto">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div>
-                &copy; 2026 FinGuard. All rights reserved.
-            </div>
-            <div class="d-flex gap-3">
-                <a asp-area="" asp-controller="Home" asp-action="Privacy" class="fg-nav-link p-0">Privacy Policy</a>
-                <a href="#" class="fg-nav-link p-0">Terms of Service</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Logout Modal -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <!-- Standardized Logout Confirmation Dialog -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 p-0" style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-light" id="logoutModalLabel">Confirm Logout</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow-lg" style="border-radius: var(--fg-radius-lg); overflow: hidden;">
+                <div class="modal-header bg-light border-bottom py-3">
+                    <h5 class="modal-title fw-bold text-dark fs-6" id="logoutModalTitle">
+                        <i class="fa-solid fa-arrow-right-from-bracket text-secondary me-2" aria-hidden="true"></i>
+                        Confirm Sign Out
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-light opacity-75">
-                    Are you sure you want to log out of the Admin Portal?
+                <div class="modal-body py-4">
+                    <p class="mb-1 text-dark fw-medium">Are you sure you want to log out of your administrative session?</p>
+                    <small class="text-muted">Unsaved data in open forms will be discarded.</small>
                 </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer bg-light border-top py-2">
+                    <button type="button" class="fg-btn fg-btn-secondary fg-btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0 p-0">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn px-4 fw-bold text-white rounded-pill" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Yes, Logout</button>
+                        <button type="submit" class="fg-btn fg-btn-danger fg-btn-sm">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-1" aria-hidden="true"></i>
+                            Yes, Sign Out
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Core Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('fgSidebarToggleBtn');
+            const closeBtn = document.getElementById('fgSidebarCloseBtn');
+            const sidebar = document.getElementById('fgSidebar');
+            const backdrop = document.getElementById('fgSidebarBackdrop');
+
+            function openSidebar() {
+                if (sidebar) sidebar.classList.add('show');
+                if (backdrop) backdrop.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove('show');
+                if (backdrop) backdrop.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (backdrop) backdrop.addEventListener('click', closeSidebar);
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
