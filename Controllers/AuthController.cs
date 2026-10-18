@@ -328,23 +328,23 @@ namespace FinGuard.Controllers
                 admin.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
                 await _context.SaveChangesAsync();
 
-                var resetLink = Url.Action("ResetPassword", "Auth", new { token = resetToken, email = email }, Request.Scheme);
-                await _emailService.SendPasswordResetEmailAsync(email, resetLink!);
+                var resetLink = Url.Action("ResetPassword", "Auth", new { token = resetToken, email = admin.Email }, Request.Scheme);
+                await _emailService.SendPasswordResetEmailAsync(admin.Email, resetLink ?? string.Empty);
 
                 ViewBag.Success = "If your email exists in our system, you will receive a password reset link shortly.";
                 return View();
             }
 
             var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalized);
-            if (customer != null)
+            if (customer != null && !string.IsNullOrEmpty(customer.Email))
             {
                 string resetToken = Guid.NewGuid().ToString();
                 customer.OtpCode = resetToken;
                 customer.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
                 await _context.SaveChangesAsync();
 
-                var resetLink = Url.Action("ResetPassword", "BorrowerAuth", new { token = resetToken, email = email }, Request.Scheme);
-                await _emailService.SendPasswordResetEmailAsync(email, resetLink!);
+                var resetLink = Url.Action("ResetPassword", "BorrowerAuth", new { token = resetToken, email = customer.Email }, Request.Scheme);
+                await _emailService.SendPasswordResetEmailAsync(customer.Email, resetLink ?? string.Empty);
 
                 ViewBag.Success = "If your email exists in our system, you will receive a password reset link shortly.";
                 return View();
