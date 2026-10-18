@@ -139,6 +139,7 @@ This project is developed collaboratively as part of an academic minor project.
 
 - **Himanshu Kumar** — Project contributor
 - **Sudhanshu Rounak** — Project contributor
+- **Aditya Kumar** — Project contributor
 
 > Update contributor names and GitHub profile links according to the actual team members and their contributions.
 
