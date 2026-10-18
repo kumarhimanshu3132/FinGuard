@@ -60,8 +60,10 @@
         <div class="d-flex align-items-center gap-2">
             <select id="statusFilterSelect" class="fg-filter-select" aria-label="Filter by Credit Status">
                 <option value="">All Credit Statuses</option>
-                <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
+                <option value="Active">Active Loan</option>
+                <option value="Eligible">Eligible</option>
+                <option value="Under Review">Under Review</option>
+                <option value="KYC Incomplete">KYC Incomplete</option>
             </select>
             <select id="kycFilterSelect" class="fg-filter-select" aria-label="Filter by KYC Status">
                 <option value="">All KYC Statuses</option>
@@ -113,16 +115,26 @@
                             <td class="text-center">
                                 @if (item.CreditStatus == "Active")
                                 {
-                                    <span class="fg-badge fg-badge-success">
-                                        <span class="fg-badge-dot"></span>
-                                        Active
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Active Loan
+                                    </span>
+                                }
+                                else if (item.CreditStatus == "Eligible")
+                                {
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small">
+                                        <i class="fa-solid fa-shield-check me-1"></i> Eligible
+                                    </span>
+                                }
+                                else if (item.CreditStatus == "Under Review")
+                                {
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 small">
+                                        <i class="fa-solid fa-clock me-1"></i> Under Review
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="fg-badge fg-badge-warning">
-                                        <span class="fg-badge-dot"></span>
-                                        Pending
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 small">
+                                        <i class="fa-solid fa-user-clock me-1"></i> KYC Incomplete
                                     </span>
                                 }
                             </td>
@@ -157,22 +169,6 @@
                                         <span>Edit</span>
                                     </a>
 
-                                    @if (item.KycStatus == "Pending")
-                                    {
-                                        <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId"
-                                           class="fg-btn fg-btn-secondary fg-btn-sm text-warning" title="Verify Identity">
-                                            <i class="fa-solid fa-id-card" aria-hidden="true"></i>
-                                            <span>KYC</span>
-                                        </a>
-                                    }
-                                    else if (item.KycStatus == "Failed")
-                                    {
-                                        <a asp-action="VerifyIdentity" asp-route-id="@item.CustomerId"
-                                           class="fg-btn fg-btn-danger fg-btn-sm" title="Retry KYC">
-                                            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-                                            <span>Retry</span>
-                                        </a>
-                                    }
 
                                     <form asp-action="Delete" asp-route-id="@item.CustomerId" method="post" class="d-inline m-0"
                                           onsubmit="return confirm('Are you sure you want to delete customer #@item.CustomerId (@item.Name)? Active loans must be cleared first.');">

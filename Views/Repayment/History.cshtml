@@ -1,0 +1,225 @@
+@model IEnumerable<FinGuard.Models.Repayment>
+
+@{
+    ViewData["Title"] = "Repayment History";
+    var repayments = Model?.ToList() ?? new List<FinGuard.Models.Repayment>();
+    var customers = ViewBag.Customers as Dictionary<int, FinGuard.Models.Customer> ?? new Dictionary<int, FinGuard.Models.Customer>();
+    decimal totalCollected = ViewBag.TotalCollected is decimal tc ? tc : repayments.Sum(r => r.AmountPaid);
+    int totalCount = ViewBag.TotalCount is int c ? c : repayments.Count;
+    decimal avgAmount = totalCount > 0 ? Math.Round(totalCollected / totalCount, 2) : 0;
+}
+
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-clock-rotate-left text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Repayment Ledger & Collections Audit History
+            <span class="fg-count-badge">@totalCount Receipts</span>
+        </h1>
+        <p class="fg-page-subtitle">Complete chronological record of all borrower installment collections, digital gateway receipts, and field recovery logs.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Index" class="fg-btn fg-btn-primary fg-btn-sm">
+            <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+            <span>Active Collections</span>
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="fg-alert fg-alert-success" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
+    </div>
+}
+
+<!-- Metric Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4">
+        <div class="fg-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Total Collections to Date</span>
+                    <strong class="fs-5 text-dark num-tabular">₹@totalCollected.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="fg-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Total Installments Recorded</span>
+                    <strong class="fs-5 text-dark num-tabular">@totalCount Payments</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="fg-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Average Installment Amount</span>
+                    <strong class="fs-5 text-dark num-tabular">₹@avgAmount.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card with Live Search & Filter -->
+<div class="fg-card fg-card-flush">
+    <div class="fg-filter-bar">
+        <div class="fg-search-input-group">
+            <i class="fa-solid fa-magnifying-glass fg-search-icon" aria-hidden="true"></i>
+            <input type="text" id="historySearchInput" class="fg-search-input"
+                   placeholder="Search by Customer Name, Customer ID, Loan ID, or Receipt Number..."
+                   value="@ViewBag.Search" aria-label="Search repayment history" />
+        </div>
+        <div class="text-muted small">
+            <span>Showing verified repayment ledger across all customer accounts</span>
+        </div>
+    </div>
+
+    <div class="fg-table-responsive">
+        <table class="fg-table">
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 120px;">Receipt ID</th>
+                    <th scope="col" style="width: 170px;">Date & Time</th>
+                    <th scope="col" style="width: 110px;">Loan ID</th>
+                    <th scope="col" style="width: 220px;">Borrower Customer</th>
+                    <th scope="col" class="text-end" style="width: 150px;">Amount Paid</th>
+                    <th scope="col" style="width: 160px;">Payment Mode</th>
+                    <th scope="col" style="width: 180px;">Transaction Ref</th>
+                    <th scope="col" style="width: 150px;">Recorded By</th>
+                    <th scope="col" class="text-center" style="width: 110px;">Status</th>
+                    <th scope="col" class="text-end" style="width: 120px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (repayments.Any())
+                {
+                    foreach (var item in repayments)
+                    {
+                        int customerId = item.Loan?.CustomerId ?? 0;
+                        string custName = (customerId > 0 && customers.ContainsKey(customerId)) 
+                            ? customers[customerId].Name 
+                            : $"Customer #{customerId}";
+
+                        string mode = string.IsNullOrEmpty(item.PaymentMethod) ? "Field Collection" : item.PaymentMethod;
+                        string badgeClass = mode.Contains("UPI") ? "bg-primary-subtle text-primary border-primary-subtle" :
+                                            mode.Contains("NetBanking") || mode.Contains("Net Banking") ? "bg-info-subtle text-info border-info-subtle" :
+                                            mode.Contains("Card") ? "bg-purple-subtle text-purple border-purple-subtle" :
+                                            "bg-success-subtle text-success border-success-subtle";
+
+                        <tr class="history-row" data-search="@item.RepaymentId @item.LoanId @customerId @custName @mode @(item.TransactionReference ?? "")">
+                            <td>
+                                <span class="fg-row-id">#REC-@item.RepaymentId</span>
+                            </td>
+                            <td>
+                                <div class="text-dark fw-medium small">@item.PaymentDate.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">@item.PaymentDate.ToString("hh:mm tt") UTC</div>
+                            </td>
+                            <td>
+                                <a asp-controller="Loan" asp-action="Details" asp-route-id="@item.LoanId" class="text-indigo fw-bold text-decoration-none">
+                                    #LN-@item.LoanId
+                                </a>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                         style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                        @(custName.Length > 0 ? custName.Substring(0, 1).ToUpper() : "C")
+                                    </div>
+                                    <div>
+                                        <a asp-controller="Customer" asp-action="Edit" asp-route-id="@customerId"
+                                           class="fw-bold text-dark text-decoration-none">
+                                            @custName
+                                        </a>
+                                        <span class="d-block text-muted small" style="font-size: 0.75rem;">
+                                            Customer ID: #@customerId
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end num-tabular fw-bold text-success fs-6">
+                                ₹@item.AmountPaid.ToString("N2")
+                            </td>
+                            <td>
+                                <span class="badge border rounded-pill px-2 py-1 @badgeClass" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-credit-card me-1"></i> @mode
+                                </span>
+                            </td>
+                            <td>
+                                <span class="font-monospace text-muted small" style="font-size: 0.75rem;">
+                                    @(string.IsNullOrEmpty(item.TransactionReference) ? $"REC_{item.RepaymentId}_{item.LoanId}" : item.TransactionReference)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-dark small fw-medium">@item.CollectedBy</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                                    <i class="fa-solid fa-check me-1"></i> Confirmed
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Receipt" asp-route-id="@item.RepaymentId" class="fg-btn fg-btn-secondary fg-btn-xs text-nowrap" title="View Official Receipt Voucher">
+                                    <i class="fa-solid fa-receipt me-1"></i> Receipt
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="p-0">
+                            <div class="fg-empty-state">
+                                <div class="fg-empty-icon">
+                                    <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                                </div>
+                                <h2 class="fg-empty-title">No Repayments Logged Yet</h2>
+                                <p class="fg-empty-desc">When installments are collected by field recovery officers or processed digitally by borrowers, records will appear here.</p>
+                                <a asp-action="Index" class="fg-btn fg-btn-primary fg-btn-sm">
+                                    <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+                                    <span>Go to Collections</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const searchInput = document.getElementById('historySearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const query = this.value.toLowerCase().trim();
+                    const rows = document.querySelectorAll('.history-row');
+                    rows.forEach(function (row) {
+                        const hay = (row.getAttribute('data-search') || '').toLowerCase();
+                        row.style.display = hay.includes(query) ? '' : 'none';
+                    });
+                });
+            }
+        })();
+    </script>
+}

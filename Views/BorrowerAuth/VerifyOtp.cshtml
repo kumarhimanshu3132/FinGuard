@@ -5,9 +5,9 @@
     Layout = "_BorrowerLayout";
 }
 
-<div class="row justify-content-center py-4 py-md-5">
+<div class="row justify-content-center py-3 py-md-5">
     <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
-        <div class="bp-card p-4 p-md-5">
+        <div class="bp-card p-3 p-sm-4 p-md-5">
             <!-- Header & Badge -->
             <div class="text-center mb-4">
                 <div class="bp-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.45rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
@@ -49,13 +49,44 @@
                 </div>
             }
 
-            @if (TempData["DevOtp"] != null)
+            @{
+                var displayOtp = (TempData["DevOtp"] as string) ?? (ViewBag.DevOtp as string);
+            }
+
+            @if (!string.IsNullOrEmpty(displayOtp))
             {
-                <div class="alert alert-warning d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small border-warning-subtle" role="alert">
-                    <i class="fa-solid fa-laptop-code mt-1 flex-shrink-0 text-warning" aria-hidden="true"></i>
-                    <div>
-                        <strong>Development Notice:</strong> Live SMTP not connected. Your verification code is:
-                        <span class="badge bg-dark fs-6 px-2 py-1 ms-1 tracking-wider font-monospace">@TempData["DevOtp"]</span>
+                <div class="alert alert-primary d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border-primary-subtle shadow-sm" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-key text-primary fs-5" aria-hidden="true"></i>
+                        <div>
+                            <span class="small fw-semibold text-dark">Your verification code is:</span>
+                            <span class="badge bg-primary fs-6 px-3 py-1 ms-1 font-monospace tracking-wider shadow-sm">@displayOtp</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-1 px-3 fw-semibold rounded-pill" onclick="autoFillCode('@displayOtp')">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-Fill
+                    </button>
+                </div>
+
+                <!-- Screen Popup Modal for Demo Verification Code -->
+                <div class="modal fade" id="otpCodeModal" tabindex="-1" aria-labelledby="otpCodeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+                        <div class="modal-content border-0 shadow-lg text-center p-4" style="border-radius: 16px;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 bg-primary-subtle text-primary" style="width: 56px; height: 56px; font-size: 1.5rem;">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1" id="otpCodeModalLabel">Account Verification</h5>
+                            <p class="text-secondary small mb-3">Your verification code is:</p>
+                            <div class="p-3 bg-light rounded-4 border mb-3">
+                                <span class="display-6 fw-bold text-primary font-monospace tracking-widest">@displayOtp</span>
+                            </div>
+                            <button type="button" class="bp-btn bp-btn-primary w-100 py-2 fs-6 fw-bold mb-2" onclick="autoFillAndCloseModal('@displayOtp')">
+                                <i class="fa-solid fa-paste me-1"></i> Auto-Fill & Continue
+                            </button>
+                            <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             }
@@ -72,17 +103,17 @@
                     </label>
 
                     <!-- 6 Digit Individual Input Boxes -->
-                    <div class="d-flex justify-content-between gap-2 px-1 mb-2" id="otpBoxContainer">
+                    <div class="d-flex justify-content-between gap-1 gap-sm-2 px-0 px-sm-1 mb-2" id="otpBoxContainer">
                         @for (int i = 0; i < 6; i++)
                         {
                             <input type="text"
-                                   class="form-control text-center fw-bold fs-4 otp-digit-box p-0"
+                                   class="form-control text-center fw-bold otp-digit-box p-0"
                                    maxlength="1"
                                    inputmode="numeric"
                                    pattern="[0-9]*"
                                    autocomplete="off"
                                    data-index="@i"
-                                   style="height: 54px; max-width: 54px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: 'Courier New', Courier, monospace;" />
+                                   style="flex: 1 1 0; min-width: 0; max-width: 52px; height: clamp(42px, 11vw, 54px); font-size: clamp(1.15rem, 5vw, 1.5rem); border-radius: 12px; border: 2px solid #e2e8f0; font-family: 'Courier New', Courier, monospace;" />
                         }
                     </div>
                     <span asp-validation-for="Otp" class="text-danger small mt-1 d-block text-center"></span>
@@ -250,6 +281,46 @@
                     if (resendForm) resendForm.classList.remove('d-none');
                 }
             }, 1000);
+
+            // Auto show Demo OTP Modal on page load if present
+            const modalEl = document.getElementById('otpCodeModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
         });
+
+        function autoFillCode(code) {
+            if (!code) return;
+            const digitBoxes = Array.from(document.querySelectorAll('.otp-digit-box'));
+            const hiddenOtpInput = document.getElementById('hiddenOtpInput');
+            const submitBtn = document.getElementById('btnSubmitOtp');
+            const digits = code.toString().trim().split('');
+
+            digits.forEach((d, i) => {
+                if (digitBoxes[i]) {
+                    digitBoxes[i].value = d;
+                    digitBoxes[i].style.borderColor = '#4338ca';
+                    digitBoxes[i].style.backgroundColor = '#eef2ff';
+                }
+            });
+
+            if (hiddenOtpInput) {
+                hiddenOtpInput.value = code.toString().trim();
+            }
+
+            if (submitBtn) {
+                submitBtn.focus();
+            }
+        }
+
+        function autoFillAndCloseModal(code) {
+            autoFillCode(code);
+            const modalEl = document.getElementById('otpCodeModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+        }
     </script>
 }

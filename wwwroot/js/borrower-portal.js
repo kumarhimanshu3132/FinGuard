@@ -35,6 +35,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const currentPane = this.closest('.bp-wizard-pane');
             const currentIndex = parseInt(currentPane.getAttribute('data-step-index') || 0, 10);
             
+            // Check prerequisite validation on step 1 (Bank Account + KYC)
+            if (currentPane.hasAttribute('data-requires-prerequisites')) {
+                const canProceed = currentPane.getAttribute('data-can-proceed') === 'true';
+                if (!canProceed) {
+                    const alertModal = document.getElementById('prerequisitesModal');
+                    if (alertModal && typeof bootstrap !== 'undefined') {
+                        const m = new bootstrap.Modal(alertModal);
+                        m.show();
+                    } else {
+                        alert('Prerequisites Required: Please link your bank account and complete PAN & Aadhaar KYC before applying for a loan.');
+                    }
+                    return;
+                }
+            }
+
             // Validate required inputs in current pane
             const inputs = currentPane.querySelectorAll('input[required], select[required]');
             let isValid = true;

@@ -21,6 +21,7 @@
 <body>
     @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
         bool isAdminAuth = User.Identity != null && User.Identity.IsAuthenticated;
         var initials = !string.IsNullOrEmpty(User.Identity?.Name) && User.Identity.Name.Length >= 2
             ? User.Identity.Name.Substring(0, 2).ToUpper()
@@ -64,35 +65,38 @@
                             </a>
                         </li>
                         <li>
-                            <a class="fg-sidebar-link @(currentController == "Loan" ? "active" : "")"
-                               asp-area="" asp-controller="Loan" asp-action="Index">
-                                <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
-                                <span>Loans</span>
+                            <a class="fg-sidebar-link @(currentController == "Loan" && currentAction == "Requests" ? "active" : "")"
+                               asp-area="" asp-controller="Loan" asp-action="Requests">
+                                <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                                <span>Loan Requests</span>
+                                <span class="fg-sidebar-badge" style="background: #f59e0b; color: #fff;">Queue</span>
                             </a>
                         </li>
                         <li>
-                            <a class="fg-sidebar-link @(currentController == "Repayment" ? "active" : "")"
+                            <a class="fg-sidebar-link @(currentController == "Loan" && currentAction != "Requests" ? "active" : "")"
+                               asp-area="" asp-controller="Loan" asp-action="Index">
+                                <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+                                <span>Loans Ledger</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="fg-sidebar-link @(currentController == "Repayment" && currentAction != "History" ? "active" : "")"
                                asp-area="" asp-controller="Repayment" asp-action="Index">
                                 <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
                                 <span>Collections</span>
                             </a>
                         </li>
-                    </ul>
-                </div>
-
-                <!-- External Portals -->
-                <div>
-                    <div class="fg-sidebar-section-title">External Portals</div>
-                    <ul class="fg-sidebar-nav">
                         <li>
-                            <a class="fg-sidebar-link" asp-controller="Portal" asp-action="Landing">
-                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                                <span>Borrower Portal</span>
-                                <span class="fg-sidebar-badge">Client</span>
+                            <a class="fg-sidebar-link @(currentController == "Repayment" && currentAction == "History" ? "active" : "")"
+                               asp-area="" asp-controller="Repayment" asp-action="History">
+                                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                                <span>Repayment History</span>
                             </a>
                         </li>
                     </ul>
                 </div>
+
+
             </div>
 
             <!-- Fixed Sidebar Footer Profile -->
@@ -134,16 +138,14 @@
                     </span>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
-                    <a asp-controller="Portal" asp-action="Landing" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-none d-md-inline-flex align-items-center gap-1" style="font-size: 0.8rem;">
-                        <i class="fa-solid fa-external-link-alt"></i> Client Portal
-                    </a>
+                <div class="d-flex align-items-center gap-2 gap-sm-3">
+
 
                     <div class="dropdown">
                         <button class="fg-user-toggle dropdown-toggle" type="button" id="fgTopProfileDropdown"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="fg-user-avatar" aria-hidden="true">@initials</span>
-                            <span class="d-none d-sm-inline">@User.Identity?.Name</span>
+                            <span class="d-none d-sm-inline text-truncate" style="max-width: 140px;">@User.Identity?.Name</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end fg-dropdown-menu" aria-labelledby="fgTopProfileDropdown">
                             <li>

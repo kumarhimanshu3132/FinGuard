@@ -5,6 +5,7 @@
     Layout = "_BorrowerLayout";
     var customer = ViewBag.Customer as FinGuard.Models.Customer;
     bool isEmailVerified = ViewBag.IsEmailVerified ?? false;
+    bool isMobileVerified = ViewBag.IsMobileVerified ?? false;
     string initials = "U";
     if (!string.IsNullOrWhiteSpace(Model.Name))
     {
@@ -73,9 +74,18 @@
                         </span>
                     }
 
-                    <span class="badge bg-success bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
-                        <i class="fa-solid fa-mobile-screen-button me-1"></i> Mobile Verified
-                    </span>
+                    @if (isMobileVerified)
+                    {
+                        <span class="badge bg-success bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-circle-check me-1"></i> Mobile Verified
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary text-white rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-mobile-screen-button me-1"></i> Mobile Unverified
+                        </span>
+                    }
 
                     @if (customer?.KycStatus == "Verified")
                     {

@@ -22,6 +22,16 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (!string.IsNullOrEmpty(email))
+        {
+            var authUser = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            if (authUser != null && authUser.OtpCode == "FORCE_PASSWORD_RESET")
+            {
+                return RedirectToAction("SetNewPassword", "BorrowerAuth");
+            }
+        }
+
         // Calculate metrics from database
         var activeCustomers = await _context.Customers.CountAsync(c => c.CreditStatus == "Active");
         var totalDisbursed = await _context.Loans.SumAsync(l => (decimal?)l.PrincipalAmount) ?? 0;

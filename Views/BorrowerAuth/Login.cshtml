@@ -5,9 +5,9 @@
     Layout = "_BorrowerLayout";
 }
 
-<div class="row justify-content-center py-4 py-md-5">
+<div class="row justify-content-center py-3 py-md-5">
     <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
-        <div class="bp-card p-4 p-md-5">
+        <div class="bp-card p-3 p-sm-4 p-md-5">
             <!-- Brand Identity & Unified Access Message -->
             <div class="text-center mb-4">
                 <div class="bp-brand-icon mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.35rem;">
@@ -64,6 +64,53 @@
                 </div>
             }
 
+            <!-- Temporary Password Persistent Alert Display -->
+            @if (TempData["TemporaryPassword"] != null)
+            {
+                <div class="card border-primary-subtle shadow-sm mb-4" id="tempPasswordAlertCard" style="background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%); border-left: 5px solid #4f46e5 !important; border-radius: 12px;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-circle bg-primary text-white p-2 flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                                <i class="fa-solid fa-key fs-5"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                    <h6 class="fw-bold text-dark mb-0 fs-6">
+                                        <span class="badge bg-primary me-1">ACTIVE</span> Temporary Password
+                                    </h6>
+                                    <span class="badge bg-warning text-dark px-2 py-1 small fw-semibold">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>New Password Required Upon Login
+                                    </span>
+                                </div>
+                                <p class="small text-secondary mb-3">
+                                    A temporary password has been assigned to your account. Use it to sign in below, after which you will be guided to set your permanent password.
+                                </p>
+                                <div class="p-3 bg-white rounded-3 border d-flex flex-column gap-2 mb-2">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <span class="small text-muted fw-semibold">Temporary Password:</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <code class="fs-5 fw-bold text-indigo px-3 py-1 rounded bg-light border font-monospace" id="displayTempPassword">@TempData["TemporaryPassword"]</code>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" id="btnCopyTempPwd" onclick="copyTempPassword()" title="Copy password">
+                                                <i class="fa-regular fa-copy me-1"></i> <span id="copyBtnText">Copy</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (TempData["TempEmail"] != null)
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-top pt-2">
+                                            <span class="small text-muted">Email: <strong>@TempData["TempEmail"]</strong></span>
+                                            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-semibold" onclick="autoFillTempCredentials('@TempData["TempEmail"]', '@TempData["TemporaryPassword"]')">
+                                                <i class="fa-solid fa-bolt me-1"></i> Auto-Fill to Form
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- Unified Sign In Form -->
             <form asp-action="Login" method="post" id="unifiedSignInForm">
                 @Html.AntiForgeryToken()
@@ -76,8 +123,8 @@
                         <span class="input-group-text bg-light text-muted border-end-0">
                             <i class="fa-solid fa-envelope" aria-hidden="true"></i>
                         </span>
-                        <input asp-for="Email" type="email" class="form-control border-start-0"
-                               placeholder="name@example.com" autocomplete="email" required autofocus />
+                        <input asp-for="Email" type="email" id="unifiedEmailInput" class="form-control border-start-0"
+                               placeholder="Enter your e-mail" autocomplete="email" required autofocus />
                     </div>
                     <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
                 </div>
@@ -93,7 +140,7 @@
                             <i class="fa-solid fa-lock" aria-hidden="true"></i>
                         </span>
                         <input asp-for="Password" type="password" id="unifiedPasswordInput"
-                               class="form-control border-start-0 border-end-0" placeholder="••••••••"
+                               class="form-control border-start-0 border-end-0" placeholder="Password"
                                autocomplete="current-password" required />
                         <button type="button" class="btn btn-outline-secondary border-start-0 bp-toggle-password"
                                 data-target="unifiedPasswordInput" aria-label="Toggle password visibility">
@@ -134,6 +181,44 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        function copyTempPassword() {
+            const pwdCode = document.getElementById('displayTempPassword');
+            const copyBtnText = document.getElementById('copyBtnText');
+            if (pwdCode) {
+                const text = pwdCode.innerText.trim();
+                navigator.clipboard.writeText(text).then(() => {
+                    if (copyBtnText) {
+                        copyBtnText.innerText = 'Copied!';
+                        setTimeout(() => { copyBtnText.innerText = 'Copy'; }, 2000);
+                    }
+                }).catch(() => {
+                    const temp = document.createElement('textarea');
+                    temp.value = text;
+                    document.body.appendChild(temp);
+                    temp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(temp);
+                    if (copyBtnText) {
+                        copyBtnText.innerText = 'Copied!';
+                        setTimeout(() => { copyBtnText.innerText = 'Copy'; }, 2000);
+                    }
+                });
+            }
+        }
+
+        function autoFillTempCredentials(email, password) {
+            const emailInput = document.getElementById('unifiedEmailInput');
+            const passwordInput = document.getElementById('unifiedPasswordInput');
+
+            if (emailInput && email) {
+                emailInput.value = email;
+            }
+            if (passwordInput && password) {
+                passwordInput.value = password;
+                passwordInput.focus();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('unifiedSignInForm');
             const submitBtn = document.getElementById('btnSubmitSignIn');

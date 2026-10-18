@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FinGuard.csproj" />
+  <Project Path="FinGuard.Tests/FinGuard.Tests.csproj" />
+</Solution>

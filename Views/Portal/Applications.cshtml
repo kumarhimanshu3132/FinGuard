@@ -1,19 +1,20 @@
 @model List<FinGuard.Models.Loan>
 
 @{
-    ViewData["Title"] = "Track Applications";
+    ViewData["Title"] = "My Loan Requests";
     Layout = "_BorrowerLayout";
 }
 
 <div class="bp-mobile-shell">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <div>
-            <h1 class="fs-5 fw-bold text-dark mb-0">Loan Applications</h1>
-            <p class="text-secondary small mb-0">Track verification stage & field appraisals</p>
+            <h1 class="fs-5 fw-bold text-dark mb-0">Loan Requests & Status</h1>
+            <p class="text-secondary small mb-0">Track application underwriting, approvals, rejection reasons, and disbursement particulars.</p>
         </div>
         <div>
             <a asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3">
-                <i class="fa-solid fa-plus me-1"></i> Apply
+                <i class="fa-solid fa-plus me-1"></i> Apply for New Loan
             </a>
         </div>
     </div>
@@ -21,154 +22,187 @@
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success d-flex align-items-center gap-2 p-3 mb-3 rounded-3 small border-success-subtle shadow-sm" role="alert">
-            <i class="fa-solid fa-circle-check text-success fs-5" aria-hidden="true"></i>
+            <i class="fa-solid fa-circle-check text-success fs-5 flex-shrink-0" aria-hidden="true"></i>
             <div>@TempData["Success"]</div>
         </div>
     }
 
-    @if (Model.Any())
+    @if (Model != null && Model.Any())
     {
-        <!-- Mobile Cards Stack (< 768px) -->
-        <div class="d-flex flex-column gap-2 d-md-none mb-4">
+        <div class="row g-3">
             @foreach (var app in Model)
             {
-                <div class="bp-card p-3 mb-0 border shadow-sm">
-                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
-                        <span class="fw-bold text-dark small">#APP-@app.LoanId</span>
-                        @if (app.Status == "Active")
-                        {
-                            <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;"><span class="bp-badge-dot"></span> Approved & Active</span>
-                        }
-                        else if (app.Status == "Pending")
-                        {
-                            <span class="bp-badge bp-badge-warning" style="font-size: 0.7rem;"><span class="bp-badge-dot"></span> Under Appraisal</span>
-                        }
-                        else
-                        {
-                            <span class="bp-badge bp-badge-neutral" style="font-size: 0.7rem;"><span class="bp-badge-dot"></span> @app.Status</span>
-                        }
-                    </div>
+                var disb = app.Disbursements?.FirstOrDefault();
+                var bank = disb?.BankAccount;
+                bool isApproved = app.Status == "Active" || app.Status == "Approved";
+                bool isPending = app.Status == "Pending";
+                bool isRejected = app.Status == "Rejected";
 
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <div class="text-muted small" style="font-size: 0.72rem;">Requested Capital</div>
-                            <div class="fs-6 fw-bold text-dark num-tabular">₹@app.PrincipalAmount.ToString("N2")</div>
+                <div class="col-12">
+                    <div class="bp-card p-4 border shadow-sm @(isApproved ? "border-success-subtle" : (isRejected ? "border-danger-subtle" : "border-warning-subtle"))">
+                        <!-- Top Header with ID and Status Badge -->
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-1 fs-6 fw-bold">#APP-@app.LoanId</span>
+                                <span class="text-muted small">Submitted for Microfinance Facility</span>
+                            </div>
+
+                            <div>
+                                @if (isApproved)
+                                {
+                                    <span class="bp-badge bp-badge-success fs-6 px-3 py-1">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Accepted & Disbursed
+                                    </span>
+                                }
+                                else if (isPending)
+                                {
+                                    <span class="bp-badge bp-badge-warning fs-6 px-3 py-1">
+                                        <i class="fa-solid fa-clock me-1"></i> Under Review
+                                    </span>
+                                }
+                                else if (isRejected)
+                                {
+                                    <span class="bp-badge bp-badge-danger fs-6 px-3 py-1">
+                                        <i class="fa-solid fa-circle-xmark me-1"></i> Application Rejected
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="bp-badge bp-badge-neutral fs-6 px-3 py-1">
+                                        @app.Status
+                                    </span>
+                                }
+                            </div>
                         </div>
-                        <div class="text-end">
-                            <div class="text-muted small" style="font-size: 0.72rem;">Monthly Installment</div>
-                            <div class="fs-6 fw-bold text-indigo num-tabular">₹@app.EMIAmount.ToString("N2")</div>
+
+                        <!-- Loan Terms & Destination Bank Details -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6 col-md-3">
+                                <div class="text-secondary small">Requested Principal:</div>
+                                <div class="fs-5 fw-bold text-dark num-tabular">₹@app.PrincipalAmount.ToString("N2")</div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="text-secondary small">Repayment Duration:</div>
+                                <div class="fs-6 fw-bold text-dark">@app.TenureMonths Months (@app.InterestRate% APR)</div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="text-secondary small">Monthly EMI:</div>
+                                <div class="fs-5 fw-bold text-indigo num-tabular">₹@app.EMIAmount.ToString("N2")</div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="text-secondary small">Designated Bank Account:</div>
+                                @if (bank != null)
+                                {
+                                    <div class="fw-bold text-dark text-truncate" title="@bank.BankName (@bank.MaskedAccountNumber)">
+                                        <i class="fa-solid fa-building-columns text-primary me-1"></i> @bank.BankName
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        A/C: @bank.MaskedAccountNumber &bull; IFSC: @bank.IFSCCode
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted small">Standard Primary Account</div>
+                                }
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="p-2 rounded bg-light border small mb-2" style="font-size: 0.75rem;">
-                        <span class="text-muted">Tenure:</span> <strong class="text-dark">@app.TenureMonths Months</strong> |
-                        <span class="text-muted">Interest:</span> <strong class="text-dark">@app.InterestRate% p.a.</strong>
-                    </div>
-
-                    <div>
-                        @if (app.Status == "Active")
+                        <!-- Status Alert / Feedback Block -->
+                        @if (isApproved)
                         {
-                            <a asp-action="LoanDetails" asp-route-id="@app.LoanId" class="bp-btn bp-btn-secondary w-100 py-1 text-center text-decoration-none" style="font-size: 0.78rem;">
-                                <i class="fa-solid fa-eye me-1"></i> View Loan Details
-                            </a>
+                            <div class="p-3 bg-success-subtle border border-success-subtle rounded-3 mb-3">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white flex-shrink-0"
+                                         style="width: 38px; height: 38px;">
+                                        <i class="fa-solid fa-money-bill-transfer"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-success">Loan Amount Disbursed Successfully</div>
+                                        <div class="text-secondary small mt-1" style="font-size: 0.8rem;">
+                                            The approved capital of <strong>₹@app.PrincipalAmount.ToString("N2")</strong> was successfully credited to your selected bank account:
+                                            <strong>@(bank?.BankName ?? "Linked Bank")</strong> (A/C: <strong>@(bank?.MaskedAccountNumber ?? "—")</strong>) via Instant IMPS.
+                                        </div>
+                                        @if (disb != null && !string.IsNullOrEmpty(disb.TransactionReference))
+                                        {
+                                            <div class="text-muted font-monospace small mt-2" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-receipt me-1"></i> Transaction Ref: <strong>@disb.TransactionReference</strong>
+                                                @if (disb.CompletedAtUtc.HasValue)
+                                                {
+                                                    <span> &bull; Disbursed on: @disb.CompletedAtUtc.Value.ToString("dd MMM yyyy, hh:mm tt") UTC</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                <a asp-action="PayEmi" asp-route-loanId="@app.LoanId" class="btn btn-sm btn-success py-1 px-3 fw-bold shadow-xs">
+                                    <i class="fa-solid fa-credit-card me-1"></i> Pay EMI Online
+                                </a>
+                                <a asp-action="Schedule" asp-route-loanId="@app.LoanId" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3">
+                                    <i class="fa-solid fa-calendar-days me-1"></i> View EMI Schedule
+                                </a>
+                                <a asp-action="LoanDetails" asp-route-id="@app.LoanId" class="bp-btn bp-btn-secondary bp-btn-sm py-1 px-3">
+                                    <i class="fa-solid fa-file-invoice me-1"></i> Loan Details
+                                </a>
+                            </div>
                         }
-                        else if (app.Status == "Pending")
+                        else if (isPending)
                         {
-                            <div class="d-flex align-items-center gap-2 text-warning small" style="font-size: 0.74rem;">
-                                <i class="fa-solid fa-spinner fa-spin"></i>
-                                <span>Stage 2: Assigned to Field Officer for Center Appraisal</span>
+                            <div class="p-3 bg-warning-subtle border border-warning-subtle rounded-3 d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark flex-shrink-0"
+                                     style="width: 38px; height: 38px;">
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">Under Review by FinGuard Loan Officer</div>
+                                    <div class="text-secondary small" style="font-size: 0.8rem;">
+                                        Your loan request has been sent to the admin portal. The loan officer is reviewing your KYC verification, income declarations, and bank account genuineness. You will receive an instant update once adjudicated.
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (isRejected)
+                        {
+                            <div class="p-3 bg-danger-subtle border border-danger-subtle rounded-3 mb-3">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger text-white flex-shrink-0"
+                                         style="width: 38px; height: 38px;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-danger">Loan Application Rejected</div>
+                                        <div class="text-dark small mt-1">
+                                            <strong>Reason for Rejection:</strong>
+                                            <span class="text-danger fw-semibold">
+                                                @(string.IsNullOrEmpty(disb?.Remarks) ? "Application does not meet institutional credit criteria or documentation standards." : disb.Remarks)
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small mt-2" style="font-size: 0.78rem;">
+                                            Please resolve the above issue (e.g. check bank details, verify KYC records, or adjust requested principal) before submitting a new application.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <a asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm py-1 px-3">
+                                    <i class="fa-solid fa-rotate-right me-1"></i> Re-apply with Updated Particulars
+                                </a>
                             </div>
                         }
                     </div>
                 </div>
             }
         </div>
-
-        <!-- Desktop Table (>= 768px) -->
-        <div class="bp-card bp-card-flush d-none d-md-block shadow-sm">
-            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-dark small">Application Queue & History</span>
-                <span class="text-muted small">@Model.Count Application Records</span>
-            </div>
-
-            <div class="bp-table-responsive">
-                <table class="bp-table">
-                    <thead>
-                        <tr>
-                            <th scope="col" style="width: 140px;">Application Ref</th>
-                            <th scope="col" class="text-end">Requested Capital</th>
-                            <th scope="col" class="text-center">Tenure</th>
-                            <th scope="col" class="text-end">Monthly EMI</th>
-                            <th scope="col">Verification Stage</th>
-                            <th scope="col" class="text-center" style="width: 140px;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var app in Model)
-                        {
-                            <tr>
-                                <td class="fw-bold text-dark">
-                                    #APP-@app.LoanId
-                                </td>
-                                <td class="text-end num-tabular fw-semibold text-dark">
-                                    ₹@app.PrincipalAmount.ToString("N2")
-                                </td>
-                                <td class="text-center num-tabular text-secondary">
-                                    @app.TenureMonths Months
-                                </td>
-                                <td class="text-end num-tabular fw-semibold text-indigo">
-                                    ₹@app.EMIAmount.ToString("N2")
-                                </td>
-                                <td>
-                                    @if (app.Status == "Active")
-                                    {
-                                        <div class="d-flex align-items-center gap-2 small text-success fw-medium">
-                                            <i class="fa-solid fa-circle-check"></i>
-                                            <span>Approved & Disbursed to Borrower Account</span>
-                                        </div>
-                                    }
-                                    else if (app.Status == "Pending")
-                                    {
-                                        <div class="d-flex align-items-center gap-2 small text-warning fw-medium">
-                                            <i class="fa-solid fa-spinner fa-spin"></i>
-                                            <span>Stage 2: Assigned to Field Officer for Center Appraisal</span>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="d-flex align-items-center gap-2 small text-secondary">
-                                            <i class="fa-solid fa-info-circle"></i>
-                                            <span>Archived Record</span>
-                                        </div>
-                                    }
-                                </td>
-                                <td class="text-center">
-                                    @if (app.Status == "Active")
-                                    {
-                                        <span class="bp-badge bp-badge-success"><span class="bp-badge-dot"></span> Approved</span>
-                                    }
-                                    else if (app.Status == "Pending")
-                                    {
-                                        <span class="bp-badge bp-badge-warning"><span class="bp-badge-dot"></span> Under Review</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="bp-badge bp-badge-neutral"><span class="bp-badge-dot"></span> @app.Status</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
     }
     else
     {
         <div class="bp-card p-5 text-center my-3 shadow-sm">
-            <div class="bp-kpi-icon indigo mx-auto mb-2"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i></div>
-            <h2 class="fs-6 fw-bold text-dark mb-1">No Applications in Queue</h2>
-            <p class="text-secondary small mb-3">You have not submitted any pending loan requests.</p>
+            <div class="bp-kpi-icon indigo mx-auto mb-2"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></div>
+            <h2 class="fs-6 fw-bold text-dark mb-1">No Loan Requests Yet</h2>
+            <p class="text-secondary small mb-3">You have not submitted any loan applications. Complete your KYC and apply for instant microfinance capital.</p>
             <a asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm py-2 px-3">Apply for a Loan</a>
         </div>
     }

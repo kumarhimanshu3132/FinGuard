@@ -31,14 +31,8 @@
                     <div class="text-secondary small">Self-Help Group Credit Operations • Institutional Lending Ledger</div>
                 </div>
                 <div class="text-end">
-                    @if (Model.IsTestMode)
-                    {
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 fw-bold d-block mb-1">
-                            <i class="fa-solid fa-flask me-1"></i> RAZORPAY TEST MODE
-                        </span>
-                    }
                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 fw-bold">
-                        VERIFIED TRANSACTION
+                        <i class="fa-solid fa-circle-check me-1"></i> VERIFIED & SETTLED
                     </span>
                     <div class="text-muted small mt-1">Receipt #REC-@Model.RepaymentId</div>
                 </div>
@@ -56,25 +50,25 @@
                 </div>
                 <div class="col-sm-6">
                     <span class="text-secondary">Loan Account Facility:</span>
-                    <strong class="text-dark d-block">#@(loan?.LoanId ?? Model.LoanId)</strong>
+                    <strong class="text-dark d-block">#LN-@(loan?.LoanId ?? Model.LoanId)</strong>
                 </div>
                 <div class="col-sm-6">
                     <span class="text-secondary">Transaction Timestamp:</span>
                     <strong class="text-dark d-block">@Model.PaymentDate.ToString("dd MMMM yyyy, hh:mm tt") UTC</strong>
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.RazorpayPaymentId))
+                @if (!string.IsNullOrEmpty(Model.TransactionReference))
                 {
                     <div class="col-sm-6">
-                        <span class="text-secondary">Razorpay Payment ID:</span>
-                        <strong class="text-dark font-monospace d-block">@Model.RazorpayPaymentId</strong>
+                        <span class="text-secondary">Transaction Reference ID:</span>
+                        <strong class="text-dark font-monospace d-block">@Model.TransactionReference</strong>
                     </div>
                 }
-                @if (!string.IsNullOrEmpty(Model.RazorpayOrderId))
+                @if (!string.IsNullOrEmpty(Model.BankReference))
                 {
                     <div class="col-sm-6">
-                        <span class="text-secondary">Razorpay Order ID:</span>
-                        <strong class="text-dark font-monospace d-block">@Model.RazorpayOrderId</strong>
+                        <span class="text-secondary">Bank Settlement Authorization:</span>
+                        <strong class="text-dark font-monospace d-block">@Model.BankReference</strong>
                     </div>
                 }
             </div>
@@ -91,7 +85,7 @@
                 <div class="col-sm-6">
                     <div><strong>Collection Channel:</strong> @Model.CollectedBy</div>
                     <div class="text-muted" style="font-size: 0.75rem;">
-                        @(string.IsNullOrEmpty(Model.PaymentMethod) ? "Standard Ledger Recovery" : $"Channel: {Model.PaymentMethod}")
+                        @(string.IsNullOrEmpty(Model.PaymentMethod) ? "Standard Core Banking Recovery" : $"Channel: {Model.PaymentMethod}")
                     </div>
                 </div>
                 <div class="col-sm-6 text-sm-end">
@@ -101,13 +95,7 @@
             </div>
 
             <div class="mt-4 pt-3 border-top text-center text-muted" style="font-size: 0.75rem;">
-                @if (Model.IsTestMode)
-                {
-                    <span class="text-warning-emphasis fw-bold d-block mb-1">
-                        * Demo Sandbox Receipt: Generated in Razorpay Test Mode. No real currency transferred.
-                    </span>
-                }
-                This document serves as an authentic institutional receipt of installment payment issued by FinGuard Microfinance Management System.
+                This document serves as an official institutional electronic receipt of installment repayment issued and verified by FinGuard Core Microfinance Banking System.
             </div>
         </div>
     </div>

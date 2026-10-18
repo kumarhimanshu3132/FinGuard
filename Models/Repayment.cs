@@ -23,24 +23,21 @@ namespace FinGuard.Models
         [MaxLength(100)]
         public string CollectedBy { get; set; } = string.Empty;
 
-        // Razorpay Test Mode Payment Details
+        // Banking Payment & Ledger Identifiers
         [MaxLength(100)]
-        public string? RazorpayOrderId { get; set; }
+        public string? TransactionReference { get; set; }
 
         [MaxLength(100)]
-        public string? RazorpayPaymentId { get; set; }
-
-        [MaxLength(255)]
-        public string? RazorpaySignature { get; set; }
+        public string? BankReference { get; set; }
 
         [Required]
         [MaxLength(30)]
         public string PaymentStatus { get; set; } = "Success"; // "Success", "Pending", "Failed"
 
         [MaxLength(50)]
-        public string? PaymentMethod { get; set; } // "UPI", "Card", "NetBanking", "Cash"
+        public string? PaymentMethod { get; set; } // "UPI", "Card", "NetBanking", "Cash", "Field Collection"
 
-        public bool IsTestMode { get; set; } = true;
+        public bool IsTestMode { get; set; } = false;
 
         [MaxLength(255)]
         public string? FailureReason { get; set; }

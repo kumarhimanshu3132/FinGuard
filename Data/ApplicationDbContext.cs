@@ -15,11 +15,19 @@ namespace FinGuard.Data
         public DbSet<AdminUser> AdminUsers { get; set; }
         public DbSet<BankAccount> BankAccounts { get; set; }
         public DbSet<LoanDisbursement> LoanDisbursements { get; set; }
-        public DbSet<RazorpayOrderRecord> RazorpayOrders { get; set; }
+        public DbSet<KycVerificationRecord> KycVerificationRecords { get; set; }
+        public DbSet<KycAuditLog> KycAuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<KycVerificationRecord>()
+                .HasIndex(k => k.CustomerId)
+                .IsUnique();
+
+            modelBuilder.Entity<KycAuditLog>()
+                .HasIndex(k => k.CustomerId);
 
             modelBuilder.Entity<Customer>()
                 .HasIndex(c => c.Email)
@@ -43,20 +51,10 @@ namespace FinGuard.Data
                 .IsUnique();
 
             modelBuilder.Entity<Repayment>()
-                .HasIndex(r => r.RazorpayPaymentId);
+                .HasIndex(r => r.TransactionReference);
 
             modelBuilder.Entity<Repayment>()
-                .HasIndex(r => r.RazorpayOrderId);
-
-            modelBuilder.Entity<RazorpayOrderRecord>()
-                .HasIndex(o => o.RazorpayOrderId)
-                .IsUnique();
-
-            modelBuilder.Entity<RazorpayOrderRecord>()
-                .HasIndex(o => o.CustomerId);
-
-            modelBuilder.Entity<RazorpayOrderRecord>()
-                .HasIndex(o => o.LoanId);
+                .HasIndex(r => r.BankReference);
 
             modelBuilder.Entity<AdminUser>().HasData(
                 new AdminUser { 

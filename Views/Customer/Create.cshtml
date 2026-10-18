@@ -36,6 +36,19 @@
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
 
+                <!-- Institutional Notice -->
+                <div class="alert alert-info border border-info-subtle rounded-3 p-3 mb-4 small d-flex align-items-start gap-2 shadow-xs">
+                    <i class="fa-solid fa-circle-info text-info mt-1 fs-6 flex-shrink-0"></i>
+                    <div>
+                        <strong class="d-block text-dark">Borrower Portal Activation & KYC Verification Workflow</strong>
+                        <span class="text-secondary" style="font-size: 0.8rem; line-height: 1.4;">
+                            Upon onboarding, the customer's online portal account is initialized with default credentials (<code>FinGuard@123</code>).
+                            The customer must sign in to the <strong>Borrower Portal</strong> to verify identity details (Aadhaar & PAN).
+                            Once identity verification is completed, the customer can apply for a loan online or branch operations can issue an approved loan directly.
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Section 1: Customer Identification -->
                 <div class="fg-form-section">
                     <h2 class="fg-form-section-title">1. Identification & Demographics</h2>
@@ -47,7 +60,7 @@
                                 Customer ID <span class="required text-danger">*</span>
                             </label>
                             <input asp-for="CustomerId" type="number" min="1" class="form-control"
-                                   placeholder="e.g. 101" required />
+                                   placeholder="Enter unique numeric Customer ID" required />
                             <span asp-validation-for="CustomerId" class="text-danger small mt-1 d-block"></span>
                             <div class="fg-input-hint">Unique numerical identifier in system.</div>
                         </div>
@@ -56,7 +69,7 @@
                             <label asp-for="Name" class="fg-form-label">
                                 Full Legal Name <span class="required text-danger">*</span>
                             </label>
-                            <input asp-for="Name" class="form-control" placeholder="e.g. Ramesh Kumar"
+                            <input asp-for="Name" class="form-control" placeholder="Enter full legal name as per official government ID"
                                    oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '').replace(/^\s+/g, '').replace(/\s{2,}/g, ' ');"
                                    required />
                             <span asp-validation-for="Name" class="text-danger small mt-1 d-block"></span>
@@ -92,7 +105,7 @@
                             <label asp-for="Phone" class="fg-form-label">
                                 Mobile Number <span class="required text-danger">*</span>
                             </label>
-                            <input asp-for="Phone" class="form-control num-tabular" placeholder="10-digit mobile number"
+                            <input asp-for="Phone" class="form-control num-tabular" placeholder="Enter 10-digit primary mobile number"
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" required />
                             <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
                             <div class="fg-input-hint">Must start with 6, 7, 8, or 9.</div>
@@ -104,7 +117,7 @@
                             </label>
                             <div class="input-group">
                                 <input asp-for="Email" type="email" class="form-control"
-                                       placeholder="name@example.com" required id="emailInput" />
+                                       placeholder="Enter registered borrower email address" required id="emailInput" />
                                 <button type="button" class="fg-btn fg-btn-secondary fg-btn-sm" id="btnSendOtp">
                                     <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                                     <span>Send OTP</span>
@@ -119,7 +132,7 @@
                                 <label class="fg-form-label mb-1">Enter 6-Digit Email Verification Code</label>
                                 <div class="input-group" style="max-width: 320px;">
                                     <input type="text" id="otpInput" class="form-control num-tabular"
-                                           placeholder="6-digit OTP" maxlength="6" />
+                                           placeholder="Enter 6-digit verification code" maxlength="6" />
                                     <button type="button" class="fg-btn fg-btn-success fg-btn-sm" id="btnVerifyOtp">
                                         <i class="fa-solid fa-check" aria-hidden="true"></i>
                                         <span>Verify Code</span>
@@ -142,7 +155,7 @@
                                 Monthly Income (₹) <span class="required text-danger">*</span>
                             </label>
                             <input asp-for="MonthlyIncome" type="number" step="0.01" min="1"
-                                   class="form-control num-tabular" placeholder="e.g. 25000" required />
+                                   class="form-control num-tabular" placeholder="Enter verified monthly net income in ₹" required />
                             <span asp-validation-for="MonthlyIncome" class="text-danger small mt-1 d-block"></span>
                             <div class="fg-input-hint">Gross monthly verified earnings.</div>
                         </div>
@@ -152,7 +165,7 @@
                                 Residential Address <span class="required text-danger">*</span>
                             </label>
                             <input asp-for="Address" class="form-control"
-                                   placeholder="House No, Ward/Street, Village/City" required />
+                                   placeholder="Enter flat/house no., building, street name, and locality" required />
                             <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
                         </div>
 
@@ -160,7 +173,7 @@
                             <label asp-for="PinCode" class="fg-form-label">
                                 Postal PIN Code <span class="required text-danger">*</span>
                             </label>
-                            <input asp-for="PinCode" class="form-control num-tabular" placeholder="6-digit PIN"
+                            <input asp-for="PinCode" class="form-control num-tabular" placeholder="Enter 6-digit postal PIN code"
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" required />
                             <span asp-validation-for="PinCode" class="text-danger small mt-1 d-block"></span>
                         </div>

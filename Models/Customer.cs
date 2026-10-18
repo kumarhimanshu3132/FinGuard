@@ -72,9 +72,19 @@ namespace FinGuard.Models
 
         public string KycStatus { get; set; } = "Pending";
 
+        // Borrower Authentication Credentials (Dedicated to Customers table)
+        public string? Password { get; set; }
+
+        public bool IsVerified { get; set; } = false;
+
+        public string? OtpCode { get; set; }
+
+        public DateTime? OtpExpiry { get; set; }
+
         public virtual ICollection<Loan>? Loans { get; set; }
         public virtual ICollection<BankAccount>? BankAccounts { get; set; }
         public virtual ICollection<LoanDisbursement>? LoanDisbursements { get; set; }
+        public virtual KycVerificationRecord? KycVerificationRecord { get; set; }
 
         public bool IsEligibleForLoan 
         { 

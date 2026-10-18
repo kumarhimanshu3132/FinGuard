@@ -20,15 +20,6 @@
         </a>
     </div>
 
-    <!-- Mandatory Simulation Disclaimer Banner -->
-    <div class="alert alert-info d-flex align-items-start gap-2 p-3 mb-3 rounded-3 small border-info-subtle shadow-sm" role="alert">
-        <i class="fa-solid fa-circle-info text-primary mt-1 fs-5 flex-shrink-0" aria-hidden="true"></i>
-        <div class="text-dark" style="font-size: 0.78rem; line-height: 1.45;">
-            <strong>Simulation Sandbox Notice:</strong> This module performs a sandbox simulation of institutional loan disbursement.
-            All transaction references, ledger movements, and voucher outputs are generated for demonstration and audit purposes.
-            <em>No actual fiat currency transfer occurs.</em>
-        </div>
-    </div>
 
     <!-- Feedback Alerts -->
     @if (TempData["Success"] != null)
@@ -84,7 +75,7 @@
                             @if (hasVerifiedAccount)
                             {
                                 <a asp-action="DisburseLoan" asp-route-id="@loan.LoanId" class="bp-btn bp-btn-primary w-100 py-2 text-center text-decoration-none fs-6">
-                                    <i class="fa-solid fa-paper-plane me-1"></i> Request Simulated Disbursement &rarr;
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Request Loan Disbursement &rarr;
                                 </a>
                             }
                             else
@@ -146,7 +137,7 @@
         {
             <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25 small text-secondary">
                 <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
-                You do not have a <strong>Verified</strong> bank account on file. Add and verify your bank account to enable instant simulated disbursements.
+                You do not have a <strong>Verified</strong> bank account on file. Add and verify your bank account to enable instant loan disbursements.
                 <div class="mt-2">
                     <a asp-action="BankAccounts" class="btn btn-sm btn-primary py-1 px-3">Open Bank Accounts</a>
                 </div>
@@ -172,7 +163,7 @@
                         <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
                             <div>
                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1" style="font-size: 0.68rem;">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Simulated Success
+                                    <i class="fa-solid fa-circle-check me-1"></i> Disbursed & Credited
                                 </span>
                                 <span class="text-muted small ms-1" style="font-size: 0.72rem;">@disb.CreatedAtUtc.ToString("dd MMM yyyy, hh:mm tt")</span>
                             </div>

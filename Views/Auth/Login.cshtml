@@ -4,9 +4,9 @@
     string returnUrl = (ViewData["ReturnUrl"] as string) ?? "";
 }
 
-<div class="row justify-content-center py-4 py-md-5">
+<div class="row justify-content-center py-3 py-md-5">
     <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
-        <div class="bp-card p-4 p-md-5">
+        <div class="bp-card p-3 p-sm-4 p-md-5">
             <!-- Brand Identity & Unified Access Message -->
             <div class="text-center mb-4">
                 <div class="bp-brand-icon mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.35rem;">
@@ -76,7 +76,7 @@
                             <i class="fa-solid fa-envelope" aria-hidden="true"></i>
                         </span>
                         <input type="email" name="email" class="form-control border-start-0"
-                               placeholder="name@example.com" autocomplete="email" required autofocus />
+                               placeholder="Enter your e-mail" autocomplete="email" required autofocus />
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@
                             <i class="fa-solid fa-lock" aria-hidden="true"></i>
                         </span>
                         <input type="password" name="password" id="authPasswordInput"
-                               class="form-control border-start-0 border-end-0" placeholder="••••••••"
+                               class="form-control border-start-0 border-end-0" placeholder="Password"
                                autocomplete="current-password" required />
                         <button type="button" class="btn btn-outline-secondary border-start-0 bp-toggle-password"
                                 data-target="authPasswordInput" aria-label="Toggle password visibility">

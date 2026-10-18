@@ -80,6 +80,8 @@
 
 html, body {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -90,9 +92,11 @@ body {
   background-color: var(--fg-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
 }
 
@@ -1254,9 +1258,18 @@ a:hover {
   z-index: 1040;
 }
 
+/* --------------------------------------------------------------------------
+   16. Comprehensive Responsive Design System (Tablets, Phablets & Mobile)
+   -------------------------------------------------------------------------- */
+
+/* Large Tablets & Small Laptops (<= 991.98px) */
 @media (max-width: 991.98px) {
   .fg-sidebar {
+    width: 280px;
+    max-width: calc(100vw - 44px);
     transform: translateX(-100%);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+    z-index: 1050;
   }
   .fg-sidebar.show {
     transform: translateX(0);
@@ -1266,5 +1279,217 @@ a:hover {
   }
   .fg-sidebar-backdrop.show {
     display: block;
+  }
+  .fg-topbar {
+    padding: 0 1rem;
+    height: 58px;
+  }
+  .fg-main-container {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+  .fg-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Tablets & Large Phones (<= 767.98px) */
+@media (max-width: 767.98px) {
+  .fg-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+  .fg-page-header > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .fg-page-header > div:last-child > .fg-btn,
+  .fg-page-header > div:last-child > a {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Responsive Search & Filter Bar */
+  .fg-filter-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+  .fg-search-input-group {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100%;
+  }
+  .fg-filter-bar > .d-flex {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem !important;
+  }
+  .fg-filter-select {
+    flex: 1 1 130px;
+    width: auto;
+    min-width: 0;
+  }
+
+  /* Tables: Fluid Touch-Scrolling with Visual Feedback */
+  .fg-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 var(--fg-radius-md) var(--fg-radius-md);
+    scrollbar-width: thin;
+    max-width: 100%;
+  }
+  .fg-table thead th {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+  .fg-table tbody td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  /* Cards */
+  .fg-card {
+    padding: 1.125rem;
+    border-radius: var(--fg-radius-md);
+    margin-bottom: 1.25rem;
+  }
+  .fg-card-flush {
+    padding: 0;
+  }
+  .fg-card-header {
+    padding: 0.875rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .fg-card-header > div,
+  .fg-card-header > span {
+    align-self: flex-start;
+  }
+
+  /* Quick Actions Grid */
+  .fg-action-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* Mobile Phones (<= 575.98px) */
+@media (max-width: 575.98px) {
+  .fg-main-container {
+    padding: 0.875rem 0.75rem 2rem;
+  }
+  .fg-page-title {
+    font-size: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .fg-page-subtitle {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  /* KPI Grid: Single Column on Phones */
+  .fg-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .fg-kpi-card {
+    padding: 1rem;
+  }
+  .fg-kpi-value {
+    font-size: 1.45rem;
+  }
+
+  /* Form Sections & Field Controls */
+  .fg-form-section {
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .fg-form-section-title {
+    font-size: 0.875rem;
+  }
+  .fg-form-section-desc {
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Live EMI Calculator Box */
+  .fg-preview-box {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  .fg-preview-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  .fg-preview-row strong {
+    font-size: 1.15rem !important;
+  }
+
+  /* Buttons & Touch Targets */
+  .fg-btn {
+    min-height: 42px;
+    padding: 0.5rem 0.875rem;
+  }
+  .fg-btn-sm {
+    min-height: 36px;
+    padding: 0.35rem 0.65rem;
+  }
+
+  /* Form Submit & Cancel Row */
+  .fg-card form .d-flex.justify-content-end {
+    flex-direction: column-reverse;
+    gap: 0.5rem !important;
+  }
+  .fg-card form .d-flex.justify-content-end > .fg-btn,
+  .fg-card form .d-flex.justify-content-end > button,
+  .fg-card form .d-flex.justify-content-end > a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Enterprise Footer */
+  .fg-footer-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+    padding: 0 0.875rem;
+  }
+  .fg-footer-links {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+  }
+}
+
+/* Very Small Mobile Screens (<= 374.98px e.g. 320px screens) */
+@media (max-width: 374.98px) {
+  .fg-topbar {
+    padding: 0 0.625rem;
+  }
+  .fg-main-container {
+    padding: 0.75rem 0.5rem 1.75rem;
+  }
+  .fg-page-title {
+    font-size: 1.15rem;
+  }
+  .fg-filter-select {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .fg-card {
+    padding: 0.875rem;
   }
 }

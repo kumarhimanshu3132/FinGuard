@@ -52,102 +52,133 @@
     </div>
 
     <!-- Responsive Table -->
+    <!-- Responsive Table -->
     <div class="fg-table-responsive">
         <table class="fg-table">
             <thead>
                 <tr>
-                    <th scope="col" style="width: 110px;">Loan ID</th>
-                    <th scope="col" style="width: 130px;">Customer ID</th>
-                    <th scope="col" class="text-end">Principal Amount</th>
-                    <th scope="col" class="text-center">Interest</th>
+                    <th scope="col" style="width: 100px;">Loan ID</th>
+                    <th scope="col">Customer Profile</th>
+                    <th scope="col">Bank & Verification</th>
+                    <th scope="col" class="text-end">Principal</th>
                     <th scope="col" class="text-center">Tenure</th>
                     <th scope="col" class="text-end">Monthly EMI</th>
-                    <th scope="col" class="text-end">Remaining Balance</th>
-                    <th scope="col" class="text-center" style="width: 120px;">Status</th>
+                    <th scope="col" class="text-center" style="width: 170px;">Admin Action</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model != null && Model.Any())
                 {
+                    var custMap = ViewBag.CustomerMap as Dictionary<int, FinGuard.Models.Customer>;
                     foreach (var item in Model)
                     {
+                        var cust = custMap != null && custMap.ContainsKey(item.CustomerId) ? custMap[item.CustomerId] : null;
+                        var bank = cust?.BankAccounts?.FirstOrDefault(b => b.IsPrimary) ?? cust?.BankAccounts?.FirstOrDefault();
+                        bool isPanVerified = cust?.KycVerificationRecord?.PanStatus == "Verified" || !string.IsNullOrEmpty(cust?.EncryptedPan);
+                        bool isAadhaarVerified = cust?.KycVerificationRecord?.AadhaarStatus == "Verified" || !string.IsNullOrEmpty(cust?.EncryptedIdDocument);
+
                         <tr class="loan-row"
-                            data-search="@item.LoanId @item.CustomerId"
+                            data-search="@item.LoanId @item.CustomerId @(cust?.Name ?? "") @(bank?.BankName ?? "")"
                             data-status="@item.Status">
                             <td>
                                 <span class="fg-row-id">#@item.LoanId</span>
                             </td>
                             <td>
-                                <a asp-controller="Customer" asp-action="Edit" asp-route-id="@item.CustomerId"
-                                   class="fw-semibold text-primary" title="View customer profile">
-                                    #@item.CustomerId
-                                </a>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="width: 32px; height: 32px; background: #4f46e5; font-size: 0.85rem;">
+                                        @(cust?.Name?.Substring(0, 1).ToUpper() ?? "C")
+                                    </div>
+                                    <div>
+                                        <a asp-controller="Customer" asp-action="Edit" asp-route-id="@item.CustomerId"
+                                           class="fw-bold text-dark text-decoration-none small d-block">
+                                            @(cust?.Name ?? "Customer #" + item.CustomerId)
+                                        </a>
+                                        <span class="text-muted" style="font-size: 0.72rem;">
+                                            Income: ₹@(cust?.MonthlyIncome.ToString("N0") ?? "N/A")/mo
+                                        </span>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="text-end num-tabular fw-semibold text-dark">
-                                ₹@item.PrincipalAmount.ToString("N2")
+                            <td>
+                                <div>
+                                    @if (bank != null)
+                                    {
+                                        <div class="small fw-semibold text-dark d-flex align-items-center gap-1">
+                                            <i class="fa-solid fa-building-columns text-primary"></i>
+                                            @bank.BankName (@bank.MaskedAccountNumber)
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">IFSC: @bank.IFSCCode</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No Bank Linked</span>
+                                    }
+
+                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                        <span class="badge @(isPanVerified ? "bg-success-subtle text-success border border-success-subtle" : "bg-light text-muted border")" style="font-size: 0.65rem;">
+                                            <i class="fa-solid @(isPanVerified ? "fa-check" : "fa-clock") me-1"></i> PAN
+                                        </span>
+                                        <span class="badge @(isAadhaarVerified ? "bg-success-subtle text-success border border-success-subtle" : "bg-light text-muted border")" style="font-size: 0.65rem;">
+                                            <i class="fa-solid @(isAadhaarVerified ? "fa-check" : "fa-clock") me-1"></i> Aadhaar
+                                        </span>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="text-center num-tabular text-secondary">
-                                @item.InterestRate% p.a.
+                            <td class="text-end num-tabular fw-bold text-dark">
+                                ₹@item.PrincipalAmount.ToString("N0")
                             </td>
-                            <td class="text-center num-tabular text-secondary">
+                            <td class="text-center num-tabular text-secondary small">
                                 @item.TenureMonths Mos
                             </td>
-                            <td class="text-end num-tabular fw-semibold" style="color: var(--fg-primary);">
+                            <td class="text-end num-tabular fw-bold" style="color: var(--fg-primary);">
                                 ₹@item.EMIAmount.ToString("N2")
                             </td>
-                            <td class="text-end num-tabular fw-semibold"
-                                style="color: @(item.RemainingBalance > 0 ? "var(--fg-danger)" : "var(--fg-success)");">
-                                ₹@item.RemainingBalance.ToString("N2")
-                            </td>
                             <td class="text-center">
-                                @if (item.Status == "Active")
+                                @if (item.Status == "Pending")
+                                {
+                                    <div class="d-flex flex-column align-items-center gap-1">
+                                        <span class="fg-badge fg-badge-warning mb-1">
+                                            <span class="fg-badge-dot"></span> In Review
+                                        </span>
+                                        <div class="d-inline-flex gap-1">
+                                            <form asp-action="Approve" asp-route-id="@item.LoanId" method="post" class="m-0 p-0">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold" style="font-size: 0.72rem;" title="Approve loan application">
+                                                    <i class="fa-solid fa-check me-1"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form asp-action="Reject" asp-route-id="@item.LoanId" method="post" class="m-0 p-0" onsubmit="return confirm('Are you sure you want to reject this loan application?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 fw-semibold" style="font-size: 0.72rem;" title="Reject loan application">
+                                                    <i class="fa-solid fa-xmark me-1"></i> Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                }
+                                else if (item.Status == "Active" || item.Status == "Approved")
                                 {
                                     <span class="fg-badge fg-badge-success">
-                                        <span class="fg-badge-dot"></span>
-                                        Active
+                                        <span class="fg-badge-dot"></span> Approved
+                                    </span>
+                                }
+                                else if (item.Status == "Rejected")
+                                {
+                                    <span class="fg-badge fg-badge-danger">
+                                        <span class="fg-badge-dot"></span> Rejected
                                     </span>
                                 }
                                 else if (item.Status == "Closed")
                                 {
                                     <span class="fg-badge fg-badge-neutral">
-                                        <span class="fg-badge-dot"></span>
-                                        Closed
-                                    </span>
-                                }
-                                else if (item.Status == "Defaulter")
-                                {
-                                    <span class="fg-badge fg-badge-danger">
-                                        <span class="fg-badge-dot"></span>
-                                        Defaulter
-                                    </span>
-                                }
-                                else if (item.Status == "Pending")
-                                {
-                                    <div class="d-flex flex-column align-items-center gap-1">
-                                        <span class="fg-badge fg-badge-warning">
-                                            <span class="fg-badge-dot"></span>
-                                            Pending
-                                        </span>
-                                        <form asp-action="Approve" asp-route-id="@item.LoanId" method="post" class="m-0 p-0">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold" style="font-size: 0.72rem;" title="Approve for disbursement">
-                                                <i class="fa-solid fa-check me-1"></i> Approve
-                                            </button>
-                                        </form>
-                                    </div>
-                                }
-                                else if (item.Status == "Approved")
-                                {
-                                    <span class="fg-badge fg-badge-success">
-                                        <span class="fg-badge-dot"></span>
-                                        Approved (@item.DisbursementStatus)
+                                        <span class="fg-badge-dot"></span> Closed
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="fg-badge fg-badge-neutral">
-                                        <span class="fg-badge-dot"></span>
-                                        @item.Status
+                                        <span class="fg-badge-dot"></span> @item.Status
                                     </span>
                                 }
                             </td>
@@ -157,7 +188,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="p-0">
+                        <td colspan="7" class="p-0">
                             <div class="fg-empty-state">
                                 <div class="fg-empty-icon">
                                     <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>

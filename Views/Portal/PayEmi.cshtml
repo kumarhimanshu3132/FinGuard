@@ -1,7 +1,7 @@
 @model FinGuard.Models.PayEmiViewModel
 
 @{
-    ViewData["Title"] = $"Pay EMI - Loan #{Model.LoanId} (Razorpay Test Mode)";
+    ViewData["Title"] = $"Pay Installment - Loan #LN-{Model.LoanId}";
     Layout = "_BorrowerLayout";
 }
 
@@ -11,28 +11,34 @@
         <a asp-action="LoanDetails" asp-route-id="@Model.LoanId" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary fw-semibold">
             <i class="fa-solid fa-arrow-left me-1"></i> Loan Details
         </a>
-        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1 small fw-bold">
-            <i class="fa-solid fa-flask-vial me-1"></i> RAZORPAY TEST MODE
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 small fw-semibold">
+            <i class="fa-solid fa-shield-halved me-1"></i> 256-Bit Bank-Grade SSL
         </span>
     </div>
 
     <!-- Header -->
     <div class="mb-3">
         <h1 class="fs-5 fw-bold text-dark mb-0">Pay Installment</h1>
-        <p class="text-secondary small mb-0">Secure digital recovery powered by Razorpay Test Gateway</p>
+        <p class="text-secondary small mb-0">Instant digital installment repayment and settlement gateway</p>
     </div>
 
-    <!-- Test Mode Alert Banner -->
-    <div class="alert alert-warning border border-warning-subtle rounded-3 p-3 mb-3 small d-flex align-items-start gap-2 shadow-xs">
-        <i class="fa-solid fa-triangle-exclamation text-warning mt-1 fs-6 flex-shrink-0"></i>
-        <div>
-            <strong class="d-block text-dark">Simulated Test Mode Environment</strong>
-            <span class="text-secondary" style="font-size: 0.77rem; line-height: 1.4;">
-                This transaction runs strictly in <strong>Razorpay Test Mode</strong>. No real currency is debited or credited. 
-                Do not enter sensitive live banking credentials. Test UPI IDs (e.g. <code>success@razorpay</code>) and test cards are supported.
-            </span>
+    @{
+        var allActiveLoans = ViewBag.AllActiveLoans as List<FinGuard.Models.Loan>;
+    }
+    @if (allActiveLoans != null && allActiveLoans.Count > 1)
+    {
+        <div class="bp-card p-3 mb-3 border shadow-xs bg-light">
+            <span class="d-block small fw-bold text-secondary mb-2">Switch Active Loan Facility:</span>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var l in allActiveLoans)
+                {
+                    <a asp-action="PayEmi" asp-route-loanId="@l.LoanId" class="btn btn-sm @(l.LoanId == Model.LoanId ? "btn-primary" : "btn-outline-secondary") rounded-pill px-3 py-1">
+                        <i class="fa-solid fa-file-invoice me-1"></i> Loan #LN-@l.LoanId (EMI: ₹@l.EMIAmount.ToString("N0"))
+                    </a>
+                }
+            </div>
         </div>
-    </div>
+    }
 
     <!-- Facility Overview Card -->
     <div class="bp-card p-3 p-md-4 mb-3 border shadow-sm">
@@ -119,16 +125,82 @@
                 <div id="customAmountWrap" class="mt-2 d-none">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white fw-bold">₹</span>
-                        <input type="number" id="customAmountInput" class="form-control" placeholder="Enter amount" min="100" max="@Model.RemainingBalance" step="1" />
+                        <input type="number" id="customAmountInput" class="form-control" placeholder="Enter custom amount" min="100" max="@Model.RemainingBalance" step="1" />
                     </div>
                 </div>
             </label>
         </div>
 
+        <!-- Payment Channel Selection -->
+        <span class="fw-bold text-dark small d-block mb-3 pt-2 border-top">
+            <i class="fa-solid fa-building-columns text-primary me-1"></i> Select Payment Method
+        </span>
+
+        <div class="d-flex flex-column gap-2 mb-3">
+            <!-- Channel 1: UPI -->
+            <div class="p-3 border rounded-3 channel-card border-primary bg-light" style="cursor: pointer;" onclick="selectChannel('UPI', this)">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="radio" name="paymentChannel" id="channelUpi" value="UPI" class="form-check-input mt-0" checked />
+                        <div>
+                            <strong class="text-dark small d-block">UPI Instant Pay</strong>
+                            <span class="text-muted" style="font-size: 0.72rem;">Google Pay, PhonePe, Paytm, BHIM UPI</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">Zero Fee</span>
+                </div>
+                <div id="upiInputBox" class="mt-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-at text-muted"></i></span>
+                        <input type="text" id="upiIdInput" class="form-control" placeholder="Enter Virtual Payment Address (e.g. mobile@upi)" value="@($"{Model.Customer.Phone}@upi")" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channel 2: Net Banking -->
+            <div class="p-3 border rounded-3 channel-card" style="cursor: pointer;" onclick="selectChannel('NetBanking', this)">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="radio" name="paymentChannel" id="channelNetBanking" value="Net Banking" class="form-check-input mt-0" />
+                        <div>
+                            <strong class="text-dark small d-block">Internet Banking</strong>
+                            <span class="text-muted" style="font-size: 0.72rem;">All major Indian public & private scheduled banks</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill small">Instant</span>
+                </div>
+                <div id="netBankingBox" class="mt-2 d-none">
+                    <select id="bankSelect" class="form-select form-select-sm">
+                        <option value="State Bank of India">State Bank of India (SBI)</option>
+                        <option value="HDFC Bank" selected>HDFC Bank</option>
+                        <option value="ICICI Bank">ICICI Bank</option>
+                        <option value="Axis Bank">Axis Bank</option>
+                        <option value="Bank of Baroda">Bank of Baroda</option>
+                        <option value="Punjab National Bank">Punjab National Bank</option>
+                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Channel 3: Debit Card / RuPay -->
+            <div class="p-3 border rounded-3 channel-card" style="cursor: pointer;" onclick="selectChannel('DebitCard', this)">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="radio" name="paymentChannel" id="channelDebitCard" value="Debit Card" class="form-check-input mt-0" />
+                        <div>
+                            <strong class="text-dark small d-block">Debit Card / RuPay</strong>
+                            <span class="text-muted" style="font-size: 0.72rem;">Visa, MasterCard, and RuPay debit cards</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill small">Secure</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Total Payable Summary -->
         <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between mb-3">
             <div>
-                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Total Payment Amount</span>
+                <span class="text-secondary small d-block" style="font-size: 0.72rem;">Total Payable Amount</span>
                 <span class="fw-bold text-dark small">Instant Ledger Settlement</span>
             </div>
             <div class="text-end">
@@ -139,53 +211,77 @@
         <!-- Security Credentials Notice -->
         <div class="d-flex align-items-center gap-2 text-muted small mb-3" style="font-size: 0.72rem;">
             <i class="fa-solid fa-shield-halved text-success"></i>
-            <span>256-bit encrypted payload • Verified cryptographic signature • Zero card storage</span>
+            <span>256-bit bank-grade encryption • Verified NPCI/RBI banking switch • Zero credential retention</span>
         </div>
 
         <!-- Submit Button -->
-        <button type="button" id="btnInitiatePayment" class="bp-btn bp-btn-primary w-100 py-2 fs-6 justify-content-center shadow-sm">
-            <i class="fa-solid fa-lock me-1"></i> Proceed to Pay (Razorpay Test Mode)
+        <button type="button" id="btnInitiatePayment" class="bp-btn bp-btn-primary w-100 py-3 fs-6 justify-content-center shadow-sm">
+            <i class="fa-solid fa-lock me-2"></i> <span id="btnPayText">Pay ₹@Model.EMIAmount.ToString("N2") Securely</span>
         </button>
 
         <div id="paymentFeedback" class="mt-3 small text-center d-none"></div>
     </div>
 </div>
 
-<!-- Fallback Sandbox Simulation Modal (Used when developer runs without real Razorpay test credentials) -->
-<div class="modal fade" id="sandboxSimModal" tabindex="-1" aria-hidden="true">
+<!-- Bank Payment Authorization Modal -->
+<div class="modal fade" id="bankAuthModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-bottom py-3">
-                <h6 class="modal-title fw-bold text-dark mb-0">
-                    <i class="fa-solid fa-flask text-warning me-1"></i> FinGuard Sandbox Payment Simulator
-                </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0">FinGuard Secure Payment Authorization</h6>
+                        <span class="text-muted" style="font-size: 0.7rem;">Core Microfinance Banking Switch</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="modalCloseBtn"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="alert alert-info small py-2 px-3 rounded-3 mb-3 border-info-subtle">
-                    <i class="fa-solid fa-circle-info me-1"></i>
-                    Local Test Mode: Simulating Razorpay gateway response to verify server-side signature validation, atomic ledger updates, and receipt routing.
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-secondary small">Loan Facility:</span>
+                        <strong class="text-dark small">#LN-@Model.LoanId</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-secondary small">Borrower:</span>
+                        <span class="text-dark small fw-medium">@Model.Customer.Name</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-secondary small">Payment Channel:</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small" id="modalChannelBadge">UPI</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <span class="text-secondary small fw-medium">Debited Amount:</span>
+                        <span class="fs-4 fw-bold text-indigo num-tabular" id="modalPayAmount">₹@Model.EMIAmount.ToString("N2")</span>
+                    </div>
                 </div>
 
-                <div class="p-3 bg-light rounded-3 border mb-3 text-center">
-                    <span class="text-muted small d-block">Amount to Authorize</span>
-                    <span class="fs-3 fw-bold text-indigo" id="simModalAmount">₹0.00</span>
-                    <div class="text-muted small mt-1 font-monospace" id="simModalOrderId" style="font-size: 0.75rem;"></div>
+                <div class="mb-3" id="pinStep">
+                    <label class="form-label small fw-semibold text-secondary">Enter 4-Digit Banking / UPI PIN to Authorize</label>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <input type="password" maxlength="1" class="form-control text-center fs-5 fw-bold pin-digit" style="width: 48px; height: 48px;" value="1" />
+                        <input type="password" maxlength="1" class="form-control text-center fs-5 fw-bold pin-digit" style="width: 48px; height: 48px;" value="2" />
+                        <input type="password" maxlength="1" class="form-control text-center fs-5 fw-bold pin-digit" style="width: 48px; height: 48px;" value="3" />
+                        <input type="password" maxlength="1" class="form-control text-center fs-5 fw-bold pin-digit" style="width: 48px; height: 48px;" value="4" />
+                    </div>
+                    <span class="text-muted d-block text-center small" style="font-size: 0.72rem;">Enter your confidential security authorization PIN.</span>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold text-secondary">Simulated Test Channel</label>
-                    <select id="simChannelSelect" class="form-select form-select-sm">
-                        <option value="UPI">UPI (success@razorpay / Google Pay Test)</option>
-                        <option value="DebitCard">Test Card (Razorpay 4111-XXXX-XXXX-1111)</option>
-                        <option value="NetBanking">Net Banking (HDFC Test Sandbox)</option>
-                    </select>
+                <div id="processingState" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" id="processStatusText">Connecting to National Banking Switch...</h6>
+                    <p class="text-secondary small mb-0">Please do not refresh or close this browser window.</p>
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2" id="modalActionButtons">
                     <button type="button" class="btn btn-light w-50 py-2 small rounded-pill border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="btnSimulateSuccess" class="bp-btn bp-btn-primary w-50 py-2 small justify-content-center rounded-pill">
-                        <i class="fa-solid fa-check-circle me-1"></i> Authorize Payment
+                    <button type="button" id="btnConfirmAuthorize" class="bp-btn bp-btn-primary w-50 py-2 small justify-content-center rounded-pill">
+                        <i class="fa-solid fa-lock me-1"></i> Authorize & Pay
                     </button>
                 </div>
             </div>
@@ -193,30 +289,53 @@
     </div>
 </div>
 
-<!-- Anti-Forgery Form Token for AJAX Requests -->
+<!-- Anti-Forgery Form Token for Requests -->
 <form id="afForm" class="d-none">
     @Html.AntiForgeryToken()
 </form>
 
 @section Scripts {
-    <!-- Official Razorpay Checkout JS -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const loanId = @Model.LoanId;
-            const remainingBalance = @Model.RemainingBalance;
-            let currentSelectedAmount = @Model.EMIAmount;
-            let currentPaymentType = "EMI";
-            let activeOrderData = null;
+        let currentSelectedAmount = @Model.EMIAmount;
+        let selectedPaymentChannel = "UPI";
+        const loanId = @Model.LoanId;
+        const remainingBalance = @Model.RemainingBalance;
 
+        function selectChannel(channel, element) {
+            selectedPaymentChannel = channel;
+            document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('border-primary', 'bg-light'));
+            element.classList.add('border-primary', 'bg-light');
+
+            const radio = element.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+
+            const upiBox = document.getElementById('upiInputBox');
+            const netBankingBox = document.getElementById('netBankingBox');
+
+            if (upiBox) upiBox.classList.toggle('d-none', channel !== 'UPI');
+            if (netBankingBox) netBankingBox.classList.toggle('d-none', channel !== 'NetBanking');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
             const radioOptions = document.querySelectorAll('input[name="payOption"]');
             const customWrap = document.getElementById('customAmountWrap');
             const customInput = document.getElementById('customAmountInput');
             const displayAmount = document.getElementById('displayPayAmount');
+            const btnPayText = document.getElementById('btnPayText');
             const btnPay = document.getElementById('btnInitiatePayment');
             const feedback = document.getElementById('paymentFeedback');
             const afToken = document.querySelector('#afForm input[name="__RequestVerificationToken"]')?.value || '';
+
+            const authModalEl = document.getElementById('bankAuthModal');
+            const authModal = new bootstrap.Modal(authModalEl);
+            const modalPayAmount = document.getElementById('modalPayAmount');
+            const modalChannelBadge = document.getElementById('modalChannelBadge');
+            const btnConfirmAuthorize = document.getElementById('btnConfirmAuthorize');
+            const pinStep = document.getElementById('pinStep');
+            const processingState = document.getElementById('processingState');
+            const processStatusText = document.getElementById('processStatusText');
+            const modalActionButtons = document.getElementById('modalActionButtons');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
 
             // Handle Amount Selection
             radioOptions.forEach(radio => {
@@ -227,8 +346,6 @@
                     this.closest('.payment-option-card').classList.add('border-primary', 'bg-light');
 
                     const type = this.getAttribute('data-type');
-                    currentPaymentType = type;
-
                     if (type === 'Custom') {
                         customWrap.classList.remove('d-none');
                         const customVal = parseFloat(customInput.value) || 0;
@@ -256,191 +373,90 @@
             }
 
             function updateDisplay(val) {
-                displayAmount.textContent = '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const formatted = '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                displayAmount.textContent = formatted;
+                if (btnPayText) {
+                    btnPayText.textContent = `Pay ${formatted} Securely`;
+                }
             }
 
-            // Initiate Razorpay Order & Payment
+            // Click Pay Button -> Open Bank Authorization Modal
             btnPay.addEventListener('click', function () {
                 if (currentSelectedAmount <= 0) {
                     showFeedback('Please enter or select a valid payment amount.', 'danger');
                     return;
                 }
-
                 if (currentSelectedAmount > remainingBalance) {
-                    showFeedback('Payment amount cannot exceed the outstanding balance of ₹' + remainingBalance.toFixed(2), 'danger');
+                    showFeedback('Payment amount cannot exceed the total outstanding balance of ₹' + remainingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }), 'danger');
                     return;
                 }
 
-                setLoading(true, 'Initializing Razorpay Order...');
+                modalPayAmount.textContent = '₹' + currentSelectedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                modalChannelBadge.textContent = selectedPaymentChannel;
 
-                fetch('@Url.Action("CreateRazorpayOrder", "Portal")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': afToken
-                    },
-                    body: JSON.stringify({
-                        loanId: loanId,
-                        amount: currentSelectedAmount,
-                        paymentType: currentPaymentType
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.success) {
-                        setLoading(false);
-                        showFeedback(data.message || 'Could not initiate payment order.', 'danger');
-                        return;
-                    }
+                pinStep.classList.remove('d-none');
+                processingState.classList.add('d-none');
+                modalActionButtons.classList.remove('d-none');
+                modalCloseBtn.classList.remove('d-none');
 
-                    activeOrderData = data;
-
-                    // Check if we have active Razorpay credentials or fallback simulator
-                    const isRealKeys = data.keyId && 
-                                       !data.keyId.includes('YourTestKeyId') && 
-                                       data.keyId.startsWith('rzp_test_');
-
-                    if (isRealKeys && typeof Razorpay !== 'undefined') {
-                        launchRazorpayCheckout(data);
-                    } else {
-                        // Open developer sandbox simulator modal
-                        setLoading(false);
-                        openSandboxSimulator(data);
-                    }
-                })
-                .catch(err => {
-                    setLoading(false);
-                    showFeedback('Network error while connecting to payment service.', 'danger');
-                });
+                authModal.show();
             });
 
-            function launchRazorpayCheckout(order) {
-                const options = {
-                    key: order.keyId,
-                    amount: order.amountInPaise,
-                    currency: order.currency,
-                    name: order.companyName || 'FinGuard Microfinance',
-                    description: 'EMI Payment for Loan Facility #' + loanId + ' (TEST MODE)',
-                    order_id: order.orderId,
-                    prefill: {
-                        name: order.borrowerName,
-                        email: order.borrowerEmail,
-                        contact: order.borrowerPhone
-                    },
-                    notes: {
-                        loanId: loanId.toString(),
-                        isTestMode: 'true'
-                    },
-                    theme: {
-                        color: order.themeColor || '#4f46e5'
-                    },
-                    handler: function (response) {
-                        // Razorpay callback payload:
-                        // response.razorpay_payment_id
-                        // response.razorpay_order_id
-                        // response.razorpay_signature
-                        verifyAndSettlePayment({
-                            loanId: loanId,
-                            razorpayOrderId: response.razorpay_order_id,
-                            razorpayPaymentId: response.razorpay_payment_id,
-                            razorpaySignature: response.razorpay_signature,
-                            paymentMethod: 'Razorpay_Checkout_Test'
-                        });
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            setLoading(false);
-                            showFeedback('Payment cancelled by user. No funds were debited.', 'warning');
-                        }
-                    }
-                };
+            // Confirm Authorization & Transfer
+            btnConfirmAuthorize.addEventListener('click', function () {
+                pinStep.classList.add('d-none');
+                modalActionButtons.classList.add('d-none');
+                modalCloseBtn.classList.add('d-none');
+                processingState.classList.remove('d-none');
 
-                try {
-                    const rzp = new Razorpay(options);
-                    rzp.on('payment.failed', function (response) {
-                        setLoading(false);
-                        showFeedback('Payment Failed: ' + (response.error.description || 'Transaction declined in test mode.'), 'danger');
-                    });
-                    rzp.open();
-                } catch (e) {
-                    setLoading(false);
-                    // Fall back to sandbox modal if checkout script encounters an issue
-                    openSandboxSimulator(order);
-                }
-            }
+                processStatusText.textContent = 'Connecting to Secure Banking Gateway...';
 
-            function openSandboxSimulator(order) {
-                document.getElementById('simModalAmount').textContent = '₹' + order.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-                document.getElementById('simModalOrderId').textContent = 'Order Ref: ' + order.orderId;
-                const simModal = new bootstrap.Modal(document.getElementById('sandboxSimModal'));
-                simModal.show();
-            }
+                setTimeout(() => {
+                    processStatusText.textContent = 'Authorizing transaction with Core Banking Switch...';
+                }, 800);
 
-            // Simulate payment in sandbox mode
-            const btnSimSuccess = document.getElementById('btnSimulateSuccess');
-            if (btnSimSuccess) {
-                btnSimSuccess.addEventListener('click', function () {
-                    const simModal = bootstrap.Modal.getInstance(document.getElementById('sandboxSimModal'));
-                    if (simModal) simModal.hide();
+                setTimeout(() => {
+                    executePayment();
+                }, 1600);
+            });
 
-                    if (!activeOrderData) return;
+            function executePayment() {
+                const formData = new FormData();
+                formData.append('loanId', loanId);
+                formData.append('amount', currentSelectedAmount);
+                formData.append('paymentMethod', selectedPaymentChannel);
+                formData.append('__RequestVerificationToken', afToken);
 
-                    const channel = document.getElementById('simChannelSelect').value;
-                    const testPaymentId = 'pay_test_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
-                    const testSignature = 'simulated_test_sig_' + Date.now();
-
-                    verifyAndSettlePayment({
-                        loanId: loanId,
-                        razorpayOrderId: activeOrderData.orderId,
-                        razorpayPaymentId: testPaymentId,
-                        razorpaySignature: testSignature,
-                        paymentMethod: 'Razorpay_' + channel + '_Test'
-                    });
-                });
-            }
-
-            function verifyAndSettlePayment(payload) {
-                setLoading(true, 'Verifying cryptographic signature & updating ledger...');
-
-                fetch('@Url.Action("VerifyRazorpayPayment", "Portal")', {
+                fetch('@Url.Action("ProcessPayment", "Portal")', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': afToken
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(payload)
+                    body: formData
                 })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        showFeedback('Payment verified! Redirecting to receipt...', 'success');
+                        processStatusText.textContent = 'Payment Authorized! Generating Official Receipt...';
                         setTimeout(() => {
-                            window.location.href = data.redirectUrl || '@Url.Action("Repayments", "Portal")';
-                        }, 900);
+                            window.location.href = data.redirectUrl;
+                        }, 600);
                     } else {
-                        setLoading(false);
-                        showFeedback(data.message || 'Signature verification failed. Untrusted response.', 'danger');
+                        authModal.hide();
+                        showFeedback(data.message || 'Payment authorization failed. Please try again.', 'danger');
                     }
                 })
                 .catch(err => {
-                    setLoading(false);
-                    showFeedback('Server verification error. Please check your repayment history.', 'danger');
+                    console.error(err);
+                    authModal.hide();
+                    showFeedback('Unable to connect to banking gateway. Please try again.', 'danger');
                 });
             }
 
-            function setLoading(isLoading, text) {
-                btnPay.disabled = isLoading;
-                if (isLoading) {
-                    btnPay.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + (text || 'Processing...');
-                } else {
-                    btnPay.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Proceed to Pay (Razorpay Test Mode)';
-                }
-            }
-
             function showFeedback(msg, type) {
-                feedback.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
-                feedback.classList.add('alert', 'alert-' + type, 'p-2', 'rounded-3');
+                feedback.className = `alert alert-${type} mt-3 p-2 small`;
                 feedback.textContent = msg;
+                feedback.classList.remove('d-none');
             }
         });
     </script>

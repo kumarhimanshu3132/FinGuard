@@ -31,7 +31,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label asp-for="Name" class="form-label small fw-semibold text-secondary">Full Legal Name *</label>
-                        <input asp-for="Name" class="form-control" placeholder="e.g. Rekha Sharma" required autofocus />
+                        <input asp-for="Name" class="form-control" placeholder="Enter your full name" required autofocus />
                         <span asp-validation-for="Name" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -43,45 +43,49 @@
 
                     <div class="col-md-6">
                         <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address *</label>
-                        <input asp-for="Email" type="email" class="form-control" placeholder="name@example.com" required />
+                        <input asp-for="Email" type="email" class="form-control" placeholder="Enter your email address" required />
                         <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="Phone" class="form-label small fw-semibold text-secondary">10-Digit Mobile Number *</label>
-                        <input asp-for="Phone" class="form-control" placeholder="e.g. 9876543210"
+                        <input asp-for="Phone" class="form-control" placeholder="Enter your 10-digit mobile number"
+                               pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9"
+                               maxlength="10"
                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" required />
                         <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="Password" class="form-label small fw-semibold text-secondary">Create Password *</label>
-                        <input asp-for="Password" type="password" class="form-control" placeholder="At least 8 characters" required />
+                        <input asp-for="Password" type="password" minlength="8" class="form-control" placeholder="Enter your password" required />
                         <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary">Confirm Password *</label>
-                        <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Re-enter password" required />
+                        <input asp-for="ConfirmPassword" type="password" minlength="8" class="form-control" placeholder="Confirm your password" required />
                         <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="MonthlyIncome" class="form-label small fw-semibold text-secondary">Estimated Monthly Income (₹) *</label>
-                        <input asp-for="MonthlyIncome" type="number" step="0.01" min="1000" class="form-control" placeholder="e.g. 25000" required />
+                        <input asp-for="MonthlyIncome" type="number" step="1" min="1000" class="form-control" placeholder="Enter your monthly income" required />
                         <span asp-validation-for="MonthlyIncome" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="PinCode" class="form-label small fw-semibold text-secondary">Postal PIN Code *</label>
-                        <input asp-for="PinCode" class="form-control" placeholder="6-digit PIN"
+                        <input asp-for="PinCode" class="form-control" placeholder="Enter your 6-digit PIN code"
+                               pattern="[1-9][0-9]{5}" title="Enter a valid 6-digit postal PIN code"
+                               maxlength="6"
                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" required />
                         <span asp-validation-for="PinCode" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="col-12">
                         <label asp-for="Address" class="form-label small fw-semibold text-secondary">Residential Address *</label>
-                        <input asp-for="Address" class="form-control" placeholder="Village / Ward / Street, City" required />
+                        <input asp-for="Address" class="form-control" placeholder="Enter your residential address" required />
                         <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
                     </div>
                 </div>

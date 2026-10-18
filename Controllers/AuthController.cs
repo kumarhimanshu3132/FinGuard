@@ -41,106 +41,131 @@ namespace FinGuard.Controllers
             }
 
             string normalizedEmail = email.Trim().ToLowerInvariant();
-            var user = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
-            if (user == null)
+            // 1. Check if user is an Administrator in AdminUsers table
+            var adminUser = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && (u.Role == "Admin" || u.Role == "SuperAdmin"));
+
+            if (adminUser != null)
             {
-                var custCheck = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalizedEmail);
-                if (custCheck != null)
-                {
-                    ViewBag.Error = "Your borrower profile exists, but you have not configured an online password yet. Please create an account or verify your credentials.";
-                    return View();
-                }
-
-                ViewBag.Error = "No registered account found with this email. Please check your credentials or register a borrower account.";
-                return View();
-            }
-
-            if (string.IsNullOrEmpty(user.Password))
-            {
-                if (user.Role == "Admin" || user.Role == "SuperAdmin")
+                if (string.IsNullOrEmpty(adminUser.Password))
                 {
                     ViewBag.Error = "First-time administrator setup required. Please click 'Verify OTP & Setup' below to create your password.";
                     return View();
                 }
-                else
+
+                bool passwordValid = false;
+                try
                 {
-                    ViewBag.Error = "First time borrower setup required. Please register your account to activate your portal credentials.";
+                    passwordValid = BCrypt.Net.BCrypt.Verify(password, adminUser.Password);
+                }
+                catch
+                {
+                    passwordValid = false;
+                }
+
+                if (!passwordValid)
+                {
+                    ViewBag.Error = "Invalid credentials. Please verify your password and try again.";
                     return View();
                 }
-            }
 
-            bool passwordValid = false;
-            try
-            {
-                passwordValid = BCrypt.Net.BCrypt.Verify(password, user.Password);
-            }
-            catch
-            {
-                passwordValid = false;
-            }
+                bool forcePasswordReset = adminUser.OtpCode == "FORCE_PASSWORD_RESET";
 
-            if (!passwordValid)
-            {
-                ViewBag.Error = "Invalid credentials. Please verify your password and try again.";
-                return View();
-            }
-
-            // Smart dynamic routing based on verified role
-            if (user.Role == "Admin" || user.Role == "SuperAdmin")
-            {
                 // Clear any borrower session and sign into Admin scheme
                 await HttpContext.SignOutAsync(BorrowerAuthController.BorrowerAuthScheme);
-                await SignInUser(user.Username, user.Email, user.Role, rememberMe);
+                await SignInUser(adminUser.Username, adminUser.Email, adminUser.Role, rememberMe);
 
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Portal", StringComparison.OrdinalIgnoreCase))
+                if (forcePasswordReset)
+                {
+                    TempData.Remove("TemporaryPassword");
+                    TempData.Remove("TempEmail");
+                    TempData["ResetEmail"] = adminUser.Email;
+                    TempData["Info"] = "Please create a new permanent password to secure your administrator account.";
+                    return RedirectToAction("SetNewPassword", "BorrowerAuth");
+                }
+
+                if (!string.IsNullOrEmpty(returnUrl) 
+                    && Url.IsLocalUrl(returnUrl) 
+                    && !returnUrl.StartsWith("/Portal", StringComparison.OrdinalIgnoreCase)
+                    && !returnUrl.StartsWith("/BorrowerAuth", StringComparison.OrdinalIgnoreCase)
+                    && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase)
+                    && !returnUrl.Contains("login", StringComparison.OrdinalIgnoreCase))
                 {
                     return Redirect(returnUrl);
                 }
 
                 return RedirectToAction("Index", "Home");
             }
-            else
+
+            // 2. Otherwise, check Customers table for Borrower account
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalizedEmail);
+            if (customer == null)
             {
-                // Borrower account
-                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalizedEmail);
-                if (customer == null)
-                {
-                    int nextId = (await _context.Customers.MaxAsync(c => (int?)c.CustomerId) ?? 100) + 1;
-                    customer = new Customer
-                    {
-                        CustomerId = nextId,
-                        Name = user.FullName ?? user.Username,
-                        Email = user.Email,
-                        CountryCode = "+91",
-                        Phone = "9999999999",
-                        CreditStatus = "Pending",
-                        KycStatus = "Pending",
-                        MonthlyIncome = 25000,
-                        Address = "Field Center Onboarding",
-                        PinCode = "110001"
-                    };
-                    _context.Customers.Add(customer);
-                    await _context.SaveChangesAsync();
-                }
-
-                // Clear any admin session and sign into Borrower scheme
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                await SignInBorrowerAsync(customer, rememberMe);
-
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Home", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Redirect(returnUrl);
-                }
-
-                return RedirectToAction("Dashboard", "Portal");
+                ViewBag.Error = "No registered account found with this email. Please check your credentials or register a borrower account.";
+                return View();
             }
+
+            if (string.IsNullOrEmpty(customer.Password))
+            {
+                ViewBag.Error = "Your borrower profile exists, but you have not configured an online password yet. Please create an account or verify your credentials.";
+                return View();
+            }
+
+            bool custPasswordValid = false;
+            try
+            {
+                custPasswordValid = BCrypt.Net.BCrypt.Verify(password, customer.Password);
+            }
+            catch
+            {
+                custPasswordValid = false;
+            }
+
+            if (!custPasswordValid)
+            {
+                ViewBag.Error = "Invalid credentials. Please verify your password and try again.";
+                return View();
+            }
+
+            if (!customer.IsVerified)
+            {
+                TempData["TempEmail"] = customer.Email;
+                TempData["Info"] = "Please verify your email address to activate your borrower portal account.";
+                return RedirectToAction("VerifyOtp", "BorrowerAuth");
+            }
+
+            bool custForcePasswordReset = customer.OtpCode == "FORCE_PASSWORD_RESET";
+
+            // Clear any admin session and sign into Borrower scheme
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await SignInBorrowerAsync(customer, rememberMe);
+
+            if (custForcePasswordReset)
+            {
+                TempData.Remove("TemporaryPassword");
+                TempData.Remove("TempEmail");
+                TempData["ResetEmail"] = customer.Email;
+                TempData["Info"] = "Please create a new permanent password to secure your borrower account.";
+                return RedirectToAction("SetNewPassword", "BorrowerAuth");
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) 
+                && Url.IsLocalUrl(returnUrl) 
+                && !returnUrl.StartsWith("/Home", StringComparison.OrdinalIgnoreCase)
+                && !returnUrl.StartsWith("/BorrowerAuth", StringComparison.OrdinalIgnoreCase)
+                && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase)
+                && !returnUrl.Contains("login", StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToAction("Dashboard", "Portal");
         }
 
         [HttpGet]
         public IActionResult Register()
         {
-            return View();
+            return RedirectToAction("Register", "BorrowerAuth");
         }
 
         [HttpPost]
@@ -153,39 +178,29 @@ namespace FinGuard.Controllers
                 return View();
             }
 
-            var existingUser = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == Email);
+            string normalizedEmail = Email.Trim().ToLowerInvariant();
+            var adminUser = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && (u.Role == "Admin" || u.Role == "SuperAdmin"));
 
-            if (existingUser != null)
+            if (adminUser != null)
             {
-                if (!string.IsNullOrEmpty(existingUser.Password))
+                if (!string.IsNullOrEmpty(adminUser.Password))
                 {
-                    ViewBag.Error = "Email already registered.";
+                    ViewBag.Error = "Administrator account already registered. Please sign in.";
                     return View();
                 }
 
-                existingUser.FullName = FullName;
-                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(Password);
-                existingUser.IsVerified = true;
-            }
-            else
-            {
-                var newUser = new AdminUser
-                {
-                    FullName = FullName,
-                    Username = Email, // Fallback since Username is required
-                    Email = Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(Password),
-                    Role = "Admin",
-                    IsVerified = true
-                };
+                adminUser.FullName = FullName;
+                adminUser.Password = BCrypt.Net.BCrypt.HashPassword(Password);
+                adminUser.IsVerified = true;
+                await _context.SaveChangesAsync();
 
-                _context.AdminUsers.Add(newUser);
+                TempData["Success"] = "Administrator account successfully configured! You can now log in.";
+                return RedirectToAction("Login");
             }
 
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = "Admin account successfully created! You can now log in.";
-            return RedirectToAction("Login");
+            // Borrower accounts are registered in Customers table via BorrowerAuth
+            TempData["Info"] = "Borrower registration is handled via our Borrower Portal. Please complete your registration here.";
+            return RedirectToAction("Register", "BorrowerAuth", new { email = normalizedEmail });
         }
 
         [HttpGet]
@@ -198,10 +213,11 @@ namespace FinGuard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendOtp(string email)
         {
-            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email);
+            string normalized = (email ?? "").Trim().ToLowerInvariant();
+            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized && (u.Role == "Admin" || u.Role == "SuperAdmin"));
             if (admin == null)
             {
-                ViewBag.Error = "Access Denied: Email not found in our secure database.";
+                ViewBag.Error = "Access Denied: Email not found in our secure administrator database.";
                 return View("Setup");
             }
 
@@ -230,7 +246,8 @@ namespace FinGuard.Controllers
                 return View("VerifyOtp");
             }
 
-            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email);
+            string normalized = (email ?? "").Trim().ToLowerInvariant();
+            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized && (u.Role == "Admin" || u.Role == "SuperAdmin"));
 
             if (admin != null && admin.OtpCode == otp && admin.OtpExpiry > DateTime.UtcNow)
             {
@@ -239,7 +256,7 @@ namespace FinGuard.Controllers
                 admin.OtpCode = null;
                 await _context.SaveChangesAsync();
 
-                await SignInUser(admin.Username, admin.Email);
+                await SignInUser(admin.Username, admin.Email, admin.Role);
                 return RedirectToAction("Index", "Home");
             }
 
@@ -302,20 +319,36 @@ namespace FinGuard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(string email)
         {
-            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email);
-            if (admin == null)
+            string normalized = (email ?? "").Trim().ToLowerInvariant();
+            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized && (u.Role == "Admin" || u.Role == "SuperAdmin"));
+            if (admin != null)
             {
+                string resetToken = Guid.NewGuid().ToString();
+                admin.OtpCode = resetToken;
+                admin.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
+                await _context.SaveChangesAsync();
+
+                var resetLink = Url.Action("ResetPassword", "Auth", new { token = resetToken, email = email }, Request.Scheme);
+                await _emailService.SendPasswordResetEmailAsync(email, resetLink!);
+
                 ViewBag.Success = "If your email exists in our system, you will receive a password reset link shortly.";
                 return View();
             }
 
-            string resetToken = Guid.NewGuid().ToString();
-            admin.OtpCode = resetToken;
-            admin.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
-            await _context.SaveChangesAsync();
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalized);
+            if (customer != null)
+            {
+                string resetToken = Guid.NewGuid().ToString();
+                customer.OtpCode = resetToken;
+                customer.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
+                await _context.SaveChangesAsync();
 
-            var resetLink = Url.Action("ResetPassword", "Auth", new { token = resetToken, email = email }, Request.Scheme);
-            await _emailService.SendPasswordResetEmailAsync(email, resetLink!);
+                var resetLink = Url.Action("ResetPassword", "BorrowerAuth", new { token = resetToken, email = email }, Request.Scheme);
+                await _emailService.SendPasswordResetEmailAsync(email, resetLink!);
+
+                ViewBag.Success = "If your email exists in our system, you will receive a password reset link shortly.";
+                return View();
+            }
 
             ViewBag.Success = "If your email exists in our system, you will receive a password reset link shortly.";
             return View();
@@ -330,11 +363,16 @@ namespace FinGuard.Controllers
                 return View("Login");
             }
             
-            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email && u.OtpCode == token);
+            string normalized = email.Trim().ToLowerInvariant();
+            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized && u.OtpCode == token && (u.Role == "Admin" || u.Role == "SuperAdmin"));
             if (admin == null || admin.OtpExpiry <= DateTime.UtcNow)
             {
-                ViewBag.Error = "Your password reset link is invalid or has expired.";
-                return View("Login");
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalized && c.OtpCode == token);
+                if (customer == null || customer.OtpExpiry <= DateTime.UtcNow)
+                {
+                    ViewBag.Error = "Your password reset link is invalid or has expired.";
+                    return View("Login");
+                }
             }
 
             ViewData["Token"] = token;
@@ -361,18 +399,30 @@ namespace FinGuard.Controllers
                 return View();
             }
 
-            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email == email && u.OtpCode == token);
-            if (admin == null || admin.OtpExpiry <= DateTime.UtcNow)
+            string normalized = (email ?? "").Trim().ToLowerInvariant();
+            var admin = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized && u.OtpCode == token && (u.Role == "Admin" || u.Role == "SuperAdmin"));
+            if (admin != null && admin.OtpExpiry > DateTime.UtcNow)
             {
-                ViewBag.Error = "Your password reset link is invalid or has expired.";
-                return View();
+                admin.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                admin.OtpCode = null;
+                await _context.SaveChangesAsync();
+
+                ViewBag.Success = "Your password has been successfully reset. You can now securely log in.";
+                return View("Login");
             }
 
-            admin.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            admin.OtpCode = null;
-            await _context.SaveChangesAsync();
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == normalized && c.OtpCode == token);
+            if (customer != null && customer.OtpExpiry > DateTime.UtcNow)
+            {
+                customer.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                customer.OtpCode = null;
+                await _context.SaveChangesAsync();
 
-            ViewBag.Success = "Your password has been successfully reset. You can now securely log in.";
+                ViewBag.Success = "Your password has been successfully reset. You can now securely log in.";
+                return View("Login");
+            }
+
+            ViewBag.Error = "Your password reset link is invalid or has expired.";
             return View("Login");
         }
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Caching.Memory;
 using FinGuard.Services;
+using FinGuard.Services.Kyc;
 using FinGuard.Utilities;
 using Microsoft.AspNetCore.Authorization;
 
@@ -17,17 +18,60 @@ namespace FinGuard.Controllers
         private readonly ApplicationDbContext _context;
         private readonly EmailService _emailService;
         private readonly IMemoryCache _cache;
+        private readonly IKycVerificationService _kycService;
 
-        public CustomerController(ApplicationDbContext context, EmailService emailService, IMemoryCache cache)
+        public CustomerController(
+            ApplicationDbContext context,
+            EmailService emailService,
+            IMemoryCache cache,
+            IKycVerificationService kycService)
         {
             _context = context;
             _emailService = emailService;
             _cache = cache;
+            _kycService = kycService;
         }
 
         public async Task<IActionResult> Index()
         {
-            var customers = await _context.Customers.ToListAsync();
+            var customers = await _context.Customers
+                .Include(c => c.Loans)
+                .ToListAsync();
+
+            bool hasChanges = false;
+            foreach (var c in customers)
+            {
+                string expectedStatus;
+                if (c.Loans != null && c.Loans.Any(l => (l.Status == "Active" || l.Status == "Approved") && l.RemainingBalance > 0))
+                {
+                    expectedStatus = "Active";
+                }
+                else if (c.Loans != null && c.Loans.Any(l => l.Status == "Pending"))
+                {
+                    expectedStatus = "Under Review";
+                }
+                else if (c.KycStatus == "Verified")
+                {
+                    expectedStatus = "Eligible";
+                }
+                else
+                {
+                    expectedStatus = "KYC Incomplete";
+                }
+
+                if (c.CreditStatus != expectedStatus)
+                {
+                    c.CreditStatus = expectedStatus;
+                    _context.Customers.Update(c);
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges)
+            {
+                await _context.SaveChangesAsync();
+            }
+
             return View(customers);
         }
 
@@ -67,10 +111,17 @@ namespace FinGuard.Controllers
                 }
 
                 customer.CreditStatus = "Pending";
+                customer.KycStatus = "Pending";
+                customer.IsVerified = true;
+                if (string.IsNullOrEmpty(customer.Password))
+                {
+                    customer.Password = BCrypt.Net.BCrypt.HashPassword("FinGuard@123");
+                }
+
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = "Customer onboarded successfully!";
+                TempData["Success"] = $"Customer #{customer.CustomerId} ({customer.Name}) onboarded successfully! Portal access credentials generated (Default Temporary Password: FinGuard@123). The customer must log in to the borrower portal to complete identity verification.";
                 return RedirectToAction(nameof(Index));
             }
             return View(customer);
@@ -203,97 +254,6 @@ namespace FinGuard.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Customer deleted successfully.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> VerifyIdentity(int id)
-        {
-            var customer = await _context.Customers.FindAsync(id);
-            if (customer == null) return NotFound();
-
-            return View(customer);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyIdentity(int id, string pan, string idDocument, string otp)
-        {
-            var customer = await _context.Customers.FindAsync(id);
-            if (customer == null) return NotFound();
-
-            bool isDemoEmail = customer.Email == "test1@gmail.com" || customer.Email == "test2@gmail.com";
-            bool isDemoVerified = isDemoEmail && (otp == "000000" || otp == "123456");
-            bool isCacheVerified = _cache.TryGetValue(customer.Email, out string? cachedOtp) && cachedOtp == otp;
-
-            if (!isDemoVerified && !isCacheVerified)
-            {
-                ViewBag.Error = "Invalid or expired OTP.";
-                return View(customer);
-            }
-
-            string documentName = "";
-            DateTime documentDob = DateTime.MinValue;
-            string documentPinCode = "";
-
-            // If it's a real email, strictly enforce format checks
-            if (!isDemoEmail)
-            {
-                if (!System.Text.RegularExpressions.Regex.IsMatch(pan, @"^[A-Z]{5}[0-9]{4}[A-Z]{1}$"))
-                {
-                    ModelState.AddModelError("pan", "Invalid PAN format. Must match ABCDE1234F.");
-                    return View(customer);
-                }
-                if (string.IsNullOrWhiteSpace(idDocument) || idDocument.Length < 6)
-                {
-                    ModelState.AddModelError("idDocument", "Invalid Identity Document.");
-                    return View(customer);
-                }
-
-                // TODO: Call real 3rd party verification service here and populate:
-                // documentName = "Name from API";
-                // documentDob = DateTime.Parse("DOB from API");
-                // documentPinCode = "PIN from API";
-                
-                // For development fallback if no API exists:
-                documentName = customer.Name;
-                documentDob = customer.DateOfBirth;
-                documentPinCode = customer.PinCode;
-            }
-            else
-            {
-                // Demo Identity Record
-                documentName = "Test User";
-                documentDob = new DateTime(2000, 1, 1);
-                documentPinCode = "110001";
-            }
-
-            // Demographic Verification Matching
-            bool nameMatches = customer.Name.Trim().Equals(documentName.Trim(), StringComparison.OrdinalIgnoreCase);
-            bool dobMatches = customer.DateOfBirth.Date == documentDob.Date;
-            bool pinMatches = customer.PinCode.Trim() == documentPinCode.Trim();
-
-            if (!nameMatches || !dobMatches || !pinMatches)
-            {
-                customer.KycStatus = "Failed";
-                await _context.SaveChangesAsync();
-                
-                string errorMsg = "Identity details mismatch. ";
-                if (!nameMatches) errorMsg += "Name mismatch. ";
-                if (!dobMatches) errorMsg += "DOB mismatch. ";
-                if (!pinMatches) errorMsg += "PIN code mismatch. ";
-                
-                TempData["ErrorMessage"] = errorMsg.Trim();
-                return RedirectToAction(nameof(Index));
-            }
-
-            customer.KycStatus = "Verified";
-            customer.EncryptedPan = EncryptionHelper.Encrypt(pan);
-            customer.EncryptedIdDocument = EncryptionHelper.Encrypt(idDocument);
-            
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = "Identity verified successfully.";
             return RedirectToAction(nameof(Index));
         }
     }

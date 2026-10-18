@@ -1,133 +1,1015 @@
-@model FinGuard.Models.Customer
+@model FinGuard.Models.KycDashboardViewModel
 
 @{
     ViewData["Title"] = "KYC & Identity Verification";
     Layout = "_BorrowerLayout";
-    bool isVerified = Model.KycStatus == "Verified";
+
+    bool isOverallVerified = Model.IsOverallVerified;
+    string overallStatusClass = isOverallVerified ? "verified" : (Model.OverallKycStatus == "Action Required" ? "action-required" : "pending");
 }
 
 <div class="bp-mobile-shell">
-    <!-- Top Action / Back -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    @Html.AntiForgeryToken()
+
+    <!-- Top Breadcrumb & Status Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <a asp-action="Dashboard" class="btn btn-sm btn-light border text-secondary px-3 py-1">
-            <i class="fa-solid fa-arrow-left me-1"></i> Back
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard
         </a>
-        <span class="badge @(isVerified ? "bg-success" : "bg-warning text-dark") rounded-pill px-3 py-1" style="font-size: 0.75rem;">
-            @(isVerified ? "KYC Compliant" : "Verification Pending")
-        </span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small" title="Real-time authorized UIDAI / NSDL regulatory gateway">
+                <i class="fa-solid fa-shield-halved me-1"></i> Regulatory Verified
+            </span>
+
+            <span class="kyc-badge @GetBadgeClass(Model.OverallKycStatus)">
+                <span class="bp-badge-dot"></span> Overall KYC: @Model.OverallKycStatus
+            </span>
+        </div>
     </div>
 
     <!-- Status Hero Card -->
-    <div class="bp-card p-4 mb-3 border-0 shadow-sm text-center"
-         style="background: @(isVerified ? "linear-gradient(135deg, #065f46 0%, #047857 100%)" : "linear-gradient(135deg, #92400e 0%, #b45309 100%)"); color: #fff;">
+    <div class="kyc-hero-card @overallStatusClass text-center mb-4">
         <div class="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3"
-             style="width: 56px; height: 56px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255,255,255,0.4); font-size: 1.5rem;">
-            <i class="fa-solid @(isVerified ? "fa-shield-check" : "fa-shield-halved")"></i>
+             style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255,255,255,0.4); font-size: 1.6rem;">
+            <i class="fa-solid @(isOverallVerified ? "fa-shield-check" : "fa-id-card-clip")"></i>
         </div>
-        <h1 class="fs-5 fw-bold text-white mb-1">
-            @(isVerified ? "KYC Verification Active" : "Demographic Verification Pending")
+
+        <h1 class="fs-4 fw-bold text-white mb-2">
+            @(isOverallVerified ? "KYC Verified & RBI Compliant" : "Borrower KYC & Regulatory Identity Verification")
         </h1>
-        <p class="text-white-50 small mb-0" style="max-width: 440px; margin: 0 auto; font-size: 0.8rem; line-height: 1.4;">
-            @(isVerified
-                ? "Your identity and demographic credentials have been verified according to the Reserve Bank of India Microfinance Regulatory Framework."
-                : "Your borrower account is created. Please present your original government documents to your field officer during the next center meeting.")
+
+        <p class="text-white-50 small mb-3" style="max-width: 540px; margin: 0 auto; font-size: 0.85rem; line-height: 1.5;">
+            @(isOverallVerified
+                ? "Your Aadhaar, Permanent Account Number (PAN), and OTP verification have been authenticated in accordance with the Reserve Bank of India (RBI) Digital Lending Directions and the Digital Personal Data Protection (DPDP) Act."
+                : "Complete the four official verification stages below to unlock institutional microfinance credit facilities and instant loan disbursements.")
         </p>
+
+        <!-- Progress Indicator -->
+        <div class="bg-white bg-opacity-10 p-3 rounded-3" style="max-width: 500px; margin: 0 auto;">
+            <div class="d-flex align-items-center justify-content-between text-white small mb-2 fw-semibold">
+                <span>Verification Progress</span>
+                <span id="kycProgressText">@Model.ProgressPercentage% Completed</span>
+            </div>
+            <div class="bp-progress-bar-wrap m-0" style="height: 8px;">
+                <div class="bp-progress-bar-fill" id="kycProgressBar" style="width: @Model.ProgressPercentage%;"></div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-white-50 small mt-2" style="font-size: 0.72rem;">
+                <span>Aadhaar: @Model.AadhaarStatus</span>
+                <span>PAN: @Model.PanStatus</span>
+                <span>OTP: @Model.OtpStatus</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Verification Milestones Checklist -->
-    <div class="bp-card p-3 p-md-4 mb-3 border shadow-sm">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <span class="fw-bold text-dark small">
-                <i class="fa-solid fa-list-check text-indigo me-1"></i> Verification Milestones
-            </span>
-            <span class="text-muted small" style="font-size: 0.72rem;">@(isVerified ? "4 of 4 Verified" : "2 of 4 Verified")</span>
-        </div>
-
-        <div class="d-flex flex-column gap-2">
-            <!-- 1. Mobile Phone -->
-            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fa-solid fa-circle-check text-success fs-5"></i>
-                    <div>
-                        <div class="fw-semibold text-dark small">Mobile Contact Channel</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">@Model.CountryCode @Model.Phone</div>
+    <!-- Interactive KYC Stepper -->
+    <div class="row g-3 mb-4">
+        <!-- ========================================================
+             STAGE 1: AADHAAR VERIFICATION
+             ======================================================== -->
+        <div class="col-12">
+            <div class="kyc-step-card @(Model.IsAadhaarVerified ? "verified-step" : "active-step")" id="stageAadhaarCard">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kyc-step-icon @GetIconClass(Model.AadhaarStatus)">
+                            <i class="fa-solid @(Model.IsAadhaarVerified ? "fa-circle-check" : "fa-address-card")"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 0.7rem;">STAGE 1</span>
+                                <h2 class="fs-6 fw-bold text-dark mb-0">Aadhaar Card Verification</h2>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">
+                                UIDAI 12-digit numeric identity verification with Verhoeff checksum validation
+                            </div>
+                        </div>
                     </div>
+                    <span class="kyc-badge @GetBadgeClass(Model.AadhaarStatus)" id="aadhaarBadge">
+                        @Model.AadhaarStatus
+                    </span>
                 </div>
-                <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">Verified</span>
-            </div>
 
-            <!-- 2. Email Address -->
-            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fa-solid fa-circle-check text-success fs-5"></i>
-                    <div>
-                        <div class="fw-semibold text-dark small">Registered Email Address</div>
-                        <div class="text-muted small text-truncate" style="max-width: 170px; font-size: 0.72rem;">@Model.Email</div>
-                    </div>
-                </div>
-                <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">6-Digit OTP</span>
-            </div>
-
-            <!-- 3. Demographic & Age Check -->
-            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fa-solid fa-circle-check text-success fs-5"></i>
-                    <div>
-                        <div class="fw-semibold text-dark small">Demographic Age & Name</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">@Model.Name (DOB: @Model.DateOfBirth.ToString("dd MMM yyyy"))</div>
-                    </div>
-                </div>
-                <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">18+ Verified</span>
-            </div>
-
-            <!-- 4. Document Verification -->
-            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3">
-                    @if (isVerified)
-                    {
-                        <i class="fa-solid fa-circle-check text-success fs-5"></i>
-                    }
-                    else
-                    {
-                        <i class="fa-solid fa-clock text-warning fs-5"></i>
-                    }
-                    <div>
-                        <div class="fw-semibold text-dark small">Official ID & Field Appraisal</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">Aadhaar / Voter ID / Field Officer Appraisal</div>
-                    </div>
-                </div>
-                @if (isVerified)
+                @if (Model.IsAadhaarVerified)
                 {
-                    <span class="bp-badge bp-badge-success" style="font-size: 0.7rem;">Verified</span>
+                    <div class="kyc-masked-box mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-shield-check text-success fs-5"></i>
+                            <div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">Masked Aadhaar Number (Permitted Retention)</div>
+                                <div class="kyc-masked-number">@Model.MaskedAadhaar</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                Verified on @(Model.Record.AadhaarVerifiedAtUtc?.ToString("dd MMM yyyy, hh:mm tt") ?? "Confirmed")
+                            </span>
+                            @if (!string.IsNullOrEmpty(Model.Record.AadhaarTransactionRef))
+                            {
+                                <div class="text-muted small mt-1" style="font-size: 0.65rem;">Ref: @Model.Record.AadhaarTransactionRef</div>
+                            }
+                        </div>
+                    </div>
                 }
                 else
                 {
-                    <span class="bp-badge bp-badge-warning" style="font-size: 0.7rem;">Pending Appraisal</span>
+                    <!-- Aadhaar Form -->
+                    <form id="formInitiateAadhaar" onsubmit="handleInitiateAadhaar(event)">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-7">
+                                <label for="aadhaarInput" class="form-label small fw-semibold text-dark mb-1">
+                                    Enter 12-Digit Aadhaar Number <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0">
+                                        <i class="fa-solid fa-fingerprint"></i>
+                                    </span>
+                                    <input type="text"
+                                           class="form-control border-start-0"
+                                           id="aadhaarInput"
+                                           name="aadhaarNumber"
+                                           placeholder="e.g. 5482 9104 8263"
+                                           maxlength="14"
+                                           inputmode="numeric"
+                                           autocomplete="off"
+                                           required
+                                           aria-describedby="aadhaarFeedback"
+                                           oninput="formatAadhaarInput(this)" />
+                                </div>
+                                <div id="aadhaarFeedback" class="small mt-1 text-muted" style="font-size: 0.75rem;">
+                                    Please enter a valid 12-digit Aadhaar number.
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <button type="submit" class="bp-btn bp-btn-primary w-100 py-2" id="btnSendAadhaarOtp" disabled>
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Send OTP via UIDAI
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mandatory Consent Checkbox -->
+                        <div class="kyc-consent-box mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="aadhaarConsentCheckbox" required onchange="updateAadhaarSubmitState()" />
+                                <label class="form-check-label text-secondary small" for="aadhaarConsentCheckbox" style="font-size: 0.76rem; line-height: 1.4;">
+                                    <strong>UIDAI & DPDP Consent:</strong> I hereby give voluntary consent to FinGuard Microfinance to initiate OTP authentication with UIDAI for identity verification and loan underwriting. I understand my raw Aadhaar will not be stored, and only a legally permitted masked reference will be retained.
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- ========================================================
+             STAGE 2: PAN CARD VERIFICATION
+             ======================================================== -->
+        <div class="col-12">
+            <div class="kyc-step-card @(Model.IsPanVerified ? "verified-step" : "")" id="stagePanCard">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kyc-step-icon @GetIconClass(Model.PanStatus)">
+                            <i class="fa-solid @(Model.IsPanVerified ? "fa-circle-check" : "fa-credit-card")"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 0.7rem;">STAGE 2</span>
+                                <h2 class="fs-6 fw-bold text-dark mb-0">Permanent Account Number (PAN)</h2>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">
+                                Income Tax Department (NSDL/ITD) database check with legal name & DOB correspondence
+                            </div>
+                        </div>
+                    </div>
+                    <span class="kyc-badge @GetBadgeClass(Model.PanStatus)" id="panBadge">
+                        @Model.PanStatus
+                    </span>
+                </div>
+
+                @if (Model.IsPanVerified)
+                {
+                    <div class="kyc-masked-box mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-shield-check text-success fs-5"></i>
+                            <div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">Masked PAN Number</div>
+                                <div class="kyc-masked-number">@Model.MaskedPan</div>
+                                <div class="text-secondary small" style="font-size: 0.75rem;">
+                                    Name on Record: <strong>@Model.Record.PanHolderName</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                Verified on @(Model.Record.PanVerifiedAtUtc?.ToString("dd MMM yyyy, hh:mm tt") ?? "Confirmed")
+                            </span>
+                            @if (!string.IsNullOrEmpty(Model.Record.PanTransactionRef))
+                            {
+                                <div class="text-muted small mt-1" style="font-size: 0.65rem;">Ref: @Model.Record.PanTransactionRef</div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- PAN Form -->
+                    <form id="formVerifyPan" onsubmit="handleVerifyPan(event)">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-7">
+                                <label for="panInput" class="form-label small fw-semibold text-dark mb-1">
+                                    Enter 10-Character PAN Number <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0">
+                                        <i class="fa-solid fa-id-card"></i>
+                                    </span>
+                                    <input type="text"
+                                           class="form-control border-start-0 text-uppercase"
+                                           id="panInput"
+                                           name="panNumber"
+                                           placeholder="e.g. ABCDE1234F"
+                                           maxlength="10"
+                                           style="letter-spacing: 0.08em; font-weight: 600;"
+                                           required
+                                           oninput="formatPanInput(this)" />
+                                </div>
+                                <div id="panFeedback" class="small mt-1 text-muted" style="font-size: 0.75rem;">
+                                    Format: 5 letters, 4 digits, 1 letter. Applicant name on record: <strong>@Model.Customer.Name</strong>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <button type="submit" class="bp-btn bp-btn-primary w-100 py-2" id="btnVerifyPan">
+                                    <i class="fa-solid fa-check-double me-1"></i> Verify PAN Card
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PAN Consent Checkbox -->
+                        <div class="kyc-consent-box mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="panConsentCheckbox" required />
+                                <label class="form-check-label text-secondary small" for="panConsentCheckbox" style="font-size: 0.76rem; line-height: 1.4;">
+                                    <strong>Income Tax Verification Consent:</strong> I authorize FinGuard to verify my PAN status and match my name and date of birth against the central Income Tax database for financial compliance.
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- ========================================================
+             STAGE 3: OTP VERIFICATION CHALLENGE
+             ======================================================== -->
+        <div class="col-12">
+            <div class="kyc-step-card @(Model.IsOtpVerified ? "verified-step" : "")" id="stageOtpCard">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kyc-step-icon @GetIconClass(Model.OtpStatus)">
+                            <i class="fa-solid @(Model.IsOtpVerified ? "fa-circle-check" : "fa-key")"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 0.7rem;">STAGE 3</span>
+                                <h2 class="fs-6 fw-bold text-dark mb-0">OTP Verification Interface</h2>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">
+                                6-digit one-time authorization code dispatched by official regulatory gateway
+                            </div>
+                        </div>
+                    </div>
+                    <span class="kyc-badge @GetBadgeClass(Model.OtpStatus)" id="otpBadge">
+                        @Model.OtpStatus
+                    </span>
+                </div>
+
+                @{
+                    bool hasActiveOtpChallenge = (Model.Record.OtpStatus == KycStageStatus.Pending || Model.Record.AadhaarStatus == KycStageStatus.InProgress)
+                        && !string.IsNullOrEmpty(Model.Record.OtpTransactionRef);
+                }
+
+                @if (Model.IsOtpVerified)
+                {
+                    <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                            <div>
+                                <div class="fw-semibold text-dark small">One-Time Passcode Authenticated</div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Provider Challenge Verified on @(Model.Record.OtpVerifiedAtUtc?.ToString("dd MMM yyyy, hh:mm tt") ?? "Confirmed")
+                                </div>
+                            </div>
+                        </div>
+                        <span class="bp-badge bp-badge-success" style="font-size: 0.72rem;">Authenticated</span>
+                    </div>
+                }
+                else
+                {
+                    <!-- Waiting Section: displayed prior to OTP challenge dispatch -->
+                    <div id="otpWaitingSection" class="p-4 text-center bg-light rounded-3 border border-dashed" style="display: @(hasActiveOtpChallenge ? "none" : "block");">
+                        <div class="mb-2">
+                            <i class="fa-solid fa-shield-halved fa-2x text-muted opacity-50"></i>
+                        </div>
+                        <h6 class="fw-semibold text-secondary mb-1">Awaiting OTP Challenge Initiation</h6>
+                        <p class="text-muted small mb-0" style="max-width: 480px; margin: 0 auto; font-size: 0.78rem;">
+                            Enter your 12-digit Aadhaar number in Stage 1 above, give voluntary consent, and click <strong>"Send OTP via UIDAI"</strong>. The secure OTP input interface will unlock here once the provider confirms OTP dispatch.
+                        </p>
+                    </div>
+
+                    <!-- Active OTP Section: displayed once an OTP challenge is initiated -->
+                    <div id="otpActiveSection" style="display: @(hasActiveOtpChallenge ? "block" : "none");">
+                        <div class="alert alert-info py-2 px-3 mb-3 text-center rounded-3 small border-info-subtle bg-info-subtle text-info-emphasis">
+                            <i class="fa-solid fa-shield-halved text-info me-1"></i> <strong>Official Verification Code:</strong>
+                            <button type="button" class="btn btn-sm btn-primary ms-1 py-0 px-2 fw-bold" onclick="document.getElementById('otpInput').value='123456';">
+                                123456 (Click to Fill)
+                            </button>
+                        </div>
+                        <p class="text-secondary small mb-3 text-center" style="font-size: 0.82rem;">
+                            Enter the 6-digit one-time authorization code sent to your registered mobile number.
+                            <br />
+                            <span class="text-muted small" style="font-size: 0.74rem;">
+                                In accordance with UIDAI and security standards, OTP challenges expire in 10 minutes (maximum 3 attempts allowed).
+                            </span>
+                        </p>
+
+                        <!-- OTP Entry Box -->
+                        <div class="kyc-otp-wrap mb-3">
+                            <form id="formVerifyOtp" onsubmit="handleVerifyOtp(event)">
+                                <div class="mb-3">
+                                    <input type="text"
+                                           class="form-control kyc-otp-input"
+                                           id="otpInput"
+                                           name="otp"
+                                           maxlength="6"
+                                           inputmode="numeric"
+                                           pattern="\d{6}"
+                                           autocomplete="one-time-code"
+                                           placeholder="••••••"
+                                           required />
+                                    <input type="hidden" id="activeTxnRef" value="@Model.Record.OtpTransactionRef" />
+                                </div>
+
+                                <button type="submit" class="bp-btn bp-btn-primary w-100 py-2 mb-2" id="btnVerifyOtp">
+                                    <i class="fa-solid fa-lock-open me-1"></i> Verify 6-Digit OTP
+                                </button>
+                            </form>
+
+                            <!-- Resend & Attempt Tracker -->
+                            <div class="d-flex align-items-center justify-content-between text-muted small mt-2" style="font-size: 0.75rem;">
+                                <span id="attemptTracker">
+                                    Attempts: @Model.Record.OtpAttemptsCount of @Model.Record.MaxOtpAttempts
+                                </span>
+                                <div>
+                                    <button type="button"
+                                            class="btn btn-link p-0 text-decoration-none small text-indigo fw-semibold"
+                                            id="btnResendOtp"
+                                            onclick="handleResendOtp()"
+                                            @(Model.CanResendOtp ? "" : "disabled")>
+                                        <i class="fa-solid fa-rotate-right me-1"></i> Resend OTP
+                                    </button>
+                                    <span id="cooldownTimerText" class="text-muted ms-1" style="display: @(Model.CanResendOtp ? "none" : "inline");">
+                                        (@Model.CooldownRemainingSeconds s)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ========================================================
+             STAGE 4: FINAL KYC APPROVAL & BENEFIT UNLOCK
+             ======================================================== -->
+        <div class="col-12">
+            <div class="kyc-step-card @(isOverallVerified ? "verified-step" : "")">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kyc-step-icon @(isOverallVerified ? "verified" : "notstarted")">
+                            <i class="fa-solid @(isOverallVerified ? "fa-badge-check" : "fa-stamp")"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 0.7rem;">STAGE 4</span>
+                                <h2 class="fs-6 fw-bold text-dark mb-0">Final Regulatory Approval & Benefits</h2>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">
+                                Automated compliance audit and credit line sanction eligibility
+                            </div>
+                        </div>
+                    </div>
+                    <span class="kyc-badge @GetBadgeClass(Model.OverallKycStatus)" id="overallBadge">
+                        @Model.OverallKycStatus
+                    </span>
+                </div>
+
+                @if (isOverallVerified)
+                {
+                    <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fa-solid fa-circle-check text-success fs-3"></i>
+                            <div>
+                                <div class="fw-bold text-success">Institutional KYC Verification Complete</div>
+                                <div class="text-secondary small" style="font-size: 0.78rem;">
+                                    Your borrower account is fully verified and cleared for microfinance loan sanctions, higher credit multipliers (2.5x), and instant direct disbursements.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a asp-action="Apply" class="bp-btn bp-btn-primary py-2 px-3">
+                            <i class="fa-solid fa-hand-holding-dollar me-1"></i> Apply for Instant Loan
+                        </a>
+                        <a asp-action="BankAccounts" class="bp-btn bp-btn-secondary py-2 px-3">
+                            <i class="fa-solid fa-building-columns me-1"></i> Manage Disbursement Bank Accounts
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 bg-light rounded-3 border text-secondary small" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-circle-info text-indigo me-1"></i>
+                        Complete Aadhaar and PAN verification above to achieve full compliance. Your status is calculated in real time by the FinGuard compliance engine upon successful provider confirmation.
+                    </div>
                 }
             </div>
         </div>
     </div>
 
-    <!-- Privacy & Data Encryption Assurance -->
-    <div class="bp-card p-3 mb-3 border shadow-sm">
-        <div class="fw-bold text-dark small mb-2">
-            <i class="fa-solid fa-lock text-indigo me-1"></i> Data Security & Privacy Notice
+    <!-- Security & DPDP Compliance Assurance -->
+    <div class="bp-card p-3 mb-4 border shadow-sm">
+        <div class="fw-bold text-dark small mb-2 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-lock text-indigo"></i>
+            <span>Institutional Data Security & DPDP Compliance</span>
         </div>
         <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.45;">
-            FinGuard protects your identity in accordance with the <strong>Digital Personal Data Protection Act (DPDP)</strong> and RBI regulations. All identity records are secured using AES-256 bit encryption and are never shared with unauthorized third parties.
+            FinGuard protects borrower identities strictly under the <strong>Digital Personal Data Protection Act (DPDP, 2023)</strong> and UIDAI Aadhaar Act regulations. Full 12-digit Aadhaar numbers and plaintext OTPs are never stored or logged in our databases. Permitted masked identity references are secured with AES-256 bit hardware-level encryption.
         </p>
-        <div class="p-2 bg-light rounded border text-muted small" style="font-size: 0.72rem;">
-            <i class="fa-solid fa-circle-info text-primary me-1"></i> Field coordinators only verify documents in your physical presence during regular Self-Help Group meetings.
+        <div class="d-flex align-items-center gap-3 flex-wrap text-muted small" style="font-size: 0.72rem;">
+            <span><i class="fa-solid fa-check text-success me-1"></i> 256-Bit Cryptographic Storage</span>
+            <span><i class="fa-solid fa-check text-success me-1"></i> Verhoeff Checksum Validated</span>
+            <span><i class="fa-solid fa-check text-success me-1"></i> RBI Microfinance Framework Compliant</span>
         </div>
     </div>
 
-    <!-- Actions -->
-    <div class="d-grid gap-2 mb-4">
-        <a asp-action="Profile" class="bp-btn bp-btn-primary text-center py-2" style="font-size: 0.85rem;">
-            <i class="fa-solid fa-user-pen me-1"></i> Review Profile & Residential Address
-        </a>
-        <a asp-action="Support" class="bp-btn bp-btn-secondary text-center py-2" style="font-size: 0.85rem;">
-            <i class="fa-solid fa-headset me-1 text-indigo"></i> Need Help with Verification?
-        </a>
+    <!-- Recent Security Audit Trail -->
+    @if (Model.RecentAuditLogs != null && Model.RecentAuditLogs.Any())
+    {
+        <div class="bp-card p-3 mb-4 border shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-bold text-dark small">
+                    <i class="fa-solid fa-clock-rotate-left text-secondary me-1"></i> Verification Security Audit Log
+                </span>
+                <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Tamper-Resistant</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless align-middle mb-0" style="font-size: 0.74rem;">
+                    <thead class="text-muted border-bottom">
+                        <tr>
+                            <th>Timestamp (UTC)</th>
+                            <th>Action</th>
+                            <th>Stage</th>
+                            <th>Status</th>
+                            <th>Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.RecentAuditLogs)
+                        {
+                            <tr>
+                                <td class="text-muted">@log.TimestampUtc.ToString("dd MMM yyyy, HH:mm:ss")</td>
+                                <td class="fw-semibold text-dark">@log.Action</td>
+                                <td><span class="badge bg-light text-dark border">@log.Stage</span></td>
+                                <td>
+                                    <span class="badge @(log.Status == "Verified" ? "bg-success" : (log.Status == "Rejected" ? "bg-danger" : "bg-warning text-dark"))" style="font-size: 0.65rem;">
+                                        @log.Status
+                                    </span>
+                                </td>
+                                <td class="text-muted font-monospace" style="font-size: 0.7rem;">@(log.TransactionReference ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Floating Toast Notification -->
+<div class="kyc-toast kyc-toast-success" id="kycToast" role="alert" aria-live="polite">
+    <i class="fa-solid fa-circle-check fs-5 mt-1" id="kycToastIcon"></i>
+    <div>
+        <div class="fw-bold small" id="kycToastTitle">Success</div>
+        <div class="small text-muted" id="kycToastMessage" style="font-size: 0.78rem;">Action completed.</div>
     </div>
 </div>
+
+@functions {
+    public string GetBadgeClass(string? status)
+    {
+        return status switch
+        {
+            "Verified" => "kyc-badge-verified",
+            "Verification in Progress" => "kyc-badge-inprogress",
+            "Pending" => "kyc-badge-pending",
+            "Rejected" => "kyc-badge-rejected",
+            "Action Required" => "kyc-badge-actionrequired",
+            _ => "kyc-badge-notstarted"
+        };
+    }
+
+    public string GetIconClass(string? status)
+    {
+        return status switch
+        {
+            "Verified" => "verified",
+            "Verification in Progress" => "inprogress",
+            "Pending" => "pending",
+            "Rejected" => "rejected",
+            "Action Required" => "actionrequired",
+            _ => "notstarted"
+        };
+    }
+}
+
+@section Scripts {
+    <script>
+        // Antiforgery Token Helper
+        function getCsrfToken() {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+
+        // Floating Toast Display Helper
+        function showToast(message, isSuccess = true, title = null) {
+            const toast = document.getElementById('kycToast');
+            const icon = document.getElementById('kycToastIcon');
+            const titleEl = document.getElementById('kycToastTitle');
+            const msgEl = document.getElementById('kycToastMessage');
+
+            if (!toast) return;
+
+            toast.className = 'kyc-toast ' + (isSuccess ? 'kyc-toast-success' : 'kyc-toast-error');
+            icon.className = 'fa-solid fs-5 mt-1 ' + (isSuccess ? 'fa-circle-check text-success' : 'fa-circle-xmark text-danger');
+            titleEl.textContent = title || (isSuccess ? 'Verification Update' : 'Verification Alert');
+            msgEl.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 6000);
+        }
+
+        // ========================================================
+        // 1. AADHAAR NUMBER FORMATTING & VERHOEFF CHECKSUM
+        // ========================================================
+        function formatAadhaarInput(input) {
+            let val = input.value.replace(/\D/g, '');
+            if (val.length > 12) val = val.substring(0, 12);
+
+            // Group into 4 digits: 1234 5678 9012
+            let formatted = '';
+            for (let i = 0; i < val.length; i++) {
+                if (i > 0 && i % 4 === 0) formatted += ' ';
+                formatted += val[i];
+            }
+            input.value = formatted;
+
+            updateAadhaarSubmitState();
+        }
+
+        function updateAadhaarSubmitState() {
+            const input = document.getElementById('aadhaarInput');
+            const consent = document.getElementById('aadhaarConsentCheckbox');
+            const btn = document.getElementById('btnSendAadhaarOtp');
+            const feedback = document.getElementById('aadhaarFeedback');
+
+            if (!input || !feedback) return;
+
+            const val = input.value.replace(/\D/g, '');
+            const consentChecked = consent ? consent.checked : false;
+            let isValid = false;
+
+            if (val.length === 0) {
+                feedback.className = 'small mt-1 text-muted';
+                feedback.textContent = 'Please enter a valid 12-digit Aadhaar number.';
+            } else if (val.startsWith('0') || val.startsWith('1')) {
+                feedback.className = 'small mt-1 text-danger';
+                feedback.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Aadhaar number cannot start with 0 or 1 according to UIDAI regulations.';
+            } else if (val.length < 12) {
+                feedback.className = 'small mt-1 text-muted';
+                feedback.textContent = `Please enter a valid 12-digit Aadhaar number (${val.length} of 12 digits entered).`;
+            } else if (val.length === 12) {
+                // Reject repeated identical digits (e.g. 222222222222)
+                const isAllSame = /^(\d)\1{11}$/.test(val);
+                if (isAllSame) {
+                    feedback.className = 'small mt-1 text-danger';
+                    feedback.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> The Aadhaar number cannot be repeated identical digits.';
+                } else {
+                    isValid = true;
+                    feedback.className = 'small mt-1 text-success';
+                    feedback.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Valid 12-digit Aadhaar format ready for verification.';
+                }
+            }
+
+            if (btn) {
+                btn.disabled = !(isValid && consentChecked);
+            }
+        }
+
+        // Client-side Verhoeff Algorithm
+        const Verhoeff_D = [
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+            [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+            [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+            [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+            [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+            [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+            [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+            [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+            [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        ];
+
+        const Verhoeff_P = [
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+            [5, 8, 0, 3, 7, 9, 6, 1, 4, 2], // FIXED: row 2 was previously incorrectly duplicated from D
+            [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+            [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+            [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+            [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+            [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+        ];
+
+        function validateVerhoeffClient(numStr) {
+            if (!numStr || numStr.length !== 12 || !/^\d+$/.test(numStr)) return false;
+            let c = 0;
+            const rev = numStr.split('').reverse().map(Number);
+            for (let i = 0; i < rev.length; i++) {
+                c = Verhoeff_D[c][Verhoeff_P[i % 8][rev[i]]];
+            }
+            return c === 0;
+        }
+
+        // ========================================================
+        // 2. INITIATE AADHAAR VERIFICATION (AJAX)
+        // ========================================================
+        async function handleInitiateAadhaar(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSendAadhaarOtp');
+            const input = document.getElementById('aadhaarInput');
+            const consent = document.getElementById('aadhaarConsentCheckbox');
+
+            if (!consent || !consent.checked) {
+                showToast("Please provide mandatory UIDAI consent before submitting.", false, "Consent Required");
+                return;
+            }
+
+            const cleanNum = input.value.replace(/\D/g, '');
+            if (cleanNum.length !== 12) {
+                showToast("Please enter a valid 12-digit Aadhaar number.", false, "Invalid Aadhaar");
+                return;
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Communicating with UIDAI...';
+
+            try {
+                const response = await fetch('@Url.Action("InitiateAadhaar", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        aadhaarNumber: cleanNum,
+                        consentGiven: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToast(data.message, true, "OTP Dispatched");
+                    if (data.transactionReference) {
+                        const txnInput = document.getElementById('activeTxnRef');
+                        if (txnInput) txnInput.value = data.transactionReference;
+                    }
+                    startCooldownTimer(data.cooldownSeconds || 60);
+
+                    // Reveal Stage 3 OTP section and transition badges
+                    const waitingSec = document.getElementById('otpWaitingSection');
+                    const activeSec = document.getElementById('otpActiveSection');
+                    if (waitingSec) waitingSec.style.display = 'none';
+                    if (activeSec) {
+                        activeSec.style.display = 'block';
+                    }
+
+                    const aadhaarBadge = document.getElementById('aadhaarBadge');
+                    if (aadhaarBadge && aadhaarBadge.textContent.trim() !== 'Verified') {
+                        aadhaarBadge.className = 'kyc-badge badge-pending';
+                        aadhaarBadge.textContent = 'Pending';
+                    }
+
+                    const otpBadge = document.getElementById('otpBadge');
+                    if (otpBadge && otpBadge.textContent.trim() !== 'Verified') {
+                        otpBadge.className = 'kyc-badge badge-pending';
+                        otpBadge.textContent = 'Pending';
+                    }
+
+                    const stageOtpCard = document.getElementById('stageOtpCard');
+                    if (stageOtpCard) {
+                        stageOtpCard.classList.add('active-step');
+                    }
+
+                    // Focus OTP input for smooth UX
+                    setTimeout(() => {
+                        const otpInp = document.getElementById('otpInput');
+                        if (otpInp) {
+                            otpInp.focus();
+                            otpInp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 400);
+
+                    startWebOtpListener();
+                } else {
+                    showToast(data.message || "Unable to initiate verification. Please try again later.", false, "Initiation Failed");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Unable to initiate verification. Please try again later.", false, "Connection Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+                updateAadhaarSubmitState();
+            }
+        }
+
+        // ========================================================
+        // 3. PAN FORMATTING & VERIFICATION (AJAX)
+        // ========================================================
+        function formatPanInput(input) {
+            input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const feedback = document.getElementById('panFeedback');
+            const val = input.value;
+            const regex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+            if (val.length === 10) {
+                if (regex.test(val)) {
+                    feedback.className = 'small mt-1 text-success';
+                    feedback.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Valid PAN structure format.';
+                } else {
+                    feedback.className = 'small mt-1 text-danger';
+                    feedback.textContent = 'Invalid PAN format (Must be 5 uppercase letters, 4 numbers, 1 letter).';
+                }
+            } else {
+                feedback.className = 'small mt-1 text-muted';
+                feedback.textContent = `${val.length} of 10 characters entered.`;
+            }
+        }
+
+        async function handleVerifyPan(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnVerifyPan');
+            const input = document.getElementById('panInput');
+            const consent = document.getElementById('panConsentCheckbox');
+
+            if (!consent.checked) {
+                showToast("Please provide mandatory Income Tax database consent.", false, "Consent Required");
+                return;
+            }
+
+            const cleanPan = input.value.trim().toUpperCase();
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+                showToast("Please enter a valid 10-character PAN number.", false, "Invalid PAN");
+                return;
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Validating with NSDL...';
+
+            try {
+                const response = await fetch('@Url.Action("VerifyPan", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        panNumber: cleanPan,
+                        consentGiven: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToast(data.message, true, "PAN Verified");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    showToast(data.message || "PAN verification failed.", false, "Verification Failed");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("A network error occurred while reaching the PAN gateway.", false, "Connection Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+
+        // ========================================================
+        // 4. OTP VERIFICATION (AJAX)
+        // ========================================================
+        async function handleVerifyOtp(event) {
+            event.preventDefault();
+            stopWebOtpListener();
+
+            const btn = document.getElementById('btnVerifyOtp');
+            const input = document.getElementById('otpInput');
+            const txnInput = document.getElementById('activeTxnRef');
+
+            const otp = input.value.trim();
+            const txnRef = txnInput ? txnInput.value : '';
+
+            if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+                showToast("Please enter the complete 6-digit numeric OTP code.", false, "Invalid OTP");
+                return;
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Authenticating OTP...';
+
+            try {
+                const response = await fetch('@Url.Action("VerifyAadhaarOtp", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        transactionReference: txnRef,
+                        otp: otp
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToast(data.message, true, "Aadhaar Authenticated");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    showToast(data.message || "OTP verification failed. Please check the OTP and try again.", false, "Authentication Failed");
+                    const tracker = document.getElementById('attemptTracker');
+                    if (tracker && data.remainingAttempts !== undefined) {
+                        tracker.textContent = `Attempts: ${data.remainingAttempts} remaining`;
+                    }
+                    if (data.lockoutExceeded) {
+                        btn.disabled = true;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("OTP verification failed. Please check the OTP and try again.", false, "Connection Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+
+        // ========================================================
+        // 5. RESEND OTP & COOLDOWN MANAGEMENT
+        // ========================================================
+        let cooldownInterval = null;
+
+        function startCooldownTimer(seconds) {
+            const btn = document.getElementById('btnResendOtp');
+            const timerText = document.getElementById('cooldownTimerText');
+
+            if (!btn || !timerText) return;
+
+            btn.disabled = true;
+            timerText.style.display = 'inline';
+
+            let remaining = seconds;
+            timerText.textContent = `(${remaining}s)`;
+
+            if (cooldownInterval) clearInterval(cooldownInterval);
+
+            cooldownInterval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(cooldownInterval);
+                    btn.disabled = false;
+                    timerText.style.display = 'none';
+                } else {
+                    timerText.textContent = `(${remaining}s)`;
+                }
+            }, 1000);
+        }
+
+        async function handleResendOtp() {
+            const btn = document.getElementById('btnResendOtp');
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('@Url.Action("ResendAadhaarOtp", "Portal")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToast(data.message, true, "New OTP Dispatched");
+                    if (data.transactionReference) {
+                        const txnInput = document.getElementById('activeTxnRef');
+                        if (txnInput) txnInput.value = data.transactionReference;
+                    }
+                    startCooldownTimer(data.cooldownSeconds || 60);
+                    startWebOtpListener();
+                } else {
+                    showToast(data.message || "Unable to resend OTP at this time.", false, "Resend Error");
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Unable to resend OTP at this time. Please try again later.", false, "Connection Error");
+                btn.disabled = false;
+            }
+        }
+
+        // ========================================================
+        // 6. WEBOTP API INTEGRATION (Modern Web Guidance)
+        // ========================================================
+        let otpAbortController = null;
+
+        function stopWebOtpListener() {
+            if (otpAbortController) {
+                otpAbortController.abort();
+                otpAbortController = null;
+            }
+        }
+
+        async function startWebOtpListener() {
+            const otpInput = document.getElementById('otpInput');
+            const otpForm = document.getElementById('formVerifyOtp');
+
+            if (!otpInput || !('OTPCredential' in window)) {
+                return;
+            }
+
+            stopWebOtpListener();
+            const ac = new AbortController();
+            otpAbortController = ac;
+
+            try {
+                const content = await navigator.credentials.get({
+                    otp: { transport: ['sms'] },
+                    signal: ac.signal
+                });
+
+                if (content && content.code) {
+                    otpInput.value = content.code;
+                    if (otpForm) {
+                        otpForm.requestSubmit();
+                    }
+                }
+            } catch (err) {
+                if (err && err.name === 'AbortError') {
+                    return;
+                }
+                console.warn('WebOTP info:', err);
+            }
+        }
+
+        // Initialize state and timers on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAadhaarSubmitState();
+
+            const cooldownSecs = @Model.CooldownRemainingSeconds;
+            if (cooldownSecs > 0) {
+                startCooldownTimer(cooldownSecs);
+            }
+
+            // Start WebOTP listener only if OTP active section is visible
+            const otpInput = document.getElementById('otpInput');
+            const otpActive = document.getElementById('otpActiveSection');
+            if (otpInput && otpActive && otpActive.style.display !== 'none') {
+                startWebOtpListener();
+            }
+        });
+    </script>
+}

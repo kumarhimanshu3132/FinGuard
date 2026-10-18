@@ -28,6 +28,58 @@
 
             <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2 small mb-3 rounded-3" role="alert"></div>
 
+            <!-- Quick Bank Selection Chips (Google Pay / PhonePe Style) -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary mb-2">Select Your Bank (UPI / NetBanking Style)</label>
+                <div class="row row-cols-3 row-cols-md-4 g-2 mb-2" id="bankChipsContainer">
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-primary w-100 p-2 text-center rounded-3 border bank-chip active" onclick="pickBank('SBI', 'State Bank of India', 'SBIN0001234', 11, '11 digits (e.g. 12345678901)')">
+                            <span class="fw-bold d-block text-primary small">SBI</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">State Bank</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('HDFC', 'HDFC Bank', 'HDFC0000123', 14, '14 digits (e.g. 12345678901234)')">
+                            <span class="fw-bold d-block text-danger small">HDFC</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">HDFC Bank</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('ICICI', 'ICICI Bank', 'ICIC0000001', 12, '12 digits (e.g. 123456789012)')">
+                            <span class="fw-bold d-block text-warning small">ICICI</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">ICICI Bank</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('Axis', 'Axis Bank', 'UTIB0000001', 15, '15 digits (e.g. 123456789012345)')">
+                            <span class="fw-bold d-block text-danger small">Axis</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">Axis Bank</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('PNB', 'Punjab National Bank', 'PUNB0000100', 16, '16 digits (e.g. 1234567890123456)')">
+                            <span class="fw-bold d-block text-warning small">PNB</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">Punjab Nat.</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('BOB', 'Bank of Baroda', 'BARB0000001', 14, '14 digits (e.g. 12345678901234)')">
+                            <span class="fw-bold d-block text-warning small">BOB</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">Baroda</span>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary w-100 p-2 text-center rounded-3 border bank-chip" onclick="pickBank('Kotak', 'Kotak Mahindra Bank', 'KKBK0000123', 10, '10 digits (e.g. 1234567890)')">
+                            <span class="fw-bold d-block text-danger small">Kotak</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">Kotak Bank</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-primary small" id="bankGuidanceText">
+                    <i class="fa-solid fa-circle-info me-1"></i> Selected: <strong>State Bank of India</strong> — requires 11-digit account number & IFSC starting with <code>SBIN0...</code>
+                </div>
+            </div>
+
             <!-- Bank Name -->
             <div class="mb-3">
                 <label asp-for="BankName" class="form-label small fw-semibold text-secondary">Bank Name *</label>
@@ -35,7 +87,7 @@
                     <span class="input-group-text bg-light text-muted border-end-0">
                         <i class="fa-solid fa-building-columns"></i>
                     </span>
-                    <input asp-for="BankName" class="form-control border-start-0" placeholder="e.g. State Bank of India, HDFC Bank, ICICI Bank" required />
+                    <input asp-for="BankName" id="bankNameField" class="form-control border-start-0" placeholder="e.g. State Bank of India, HDFC Bank, ICICI Bank" value="State Bank of India" required />
                 </div>
                 <span asp-validation-for="BankName" class="text-danger small mt-1 d-block"></span>
             </div>
@@ -86,7 +138,7 @@
             <div class="row g-2 mb-3">
                 <div class="col-12 col-sm-6">
                     <label asp-for="IFSCCode" class="form-label small fw-semibold text-secondary">IFSC Code (11 Chars) *</label>
-                    <input asp-for="IFSCCode" class="form-control font-monospace text-uppercase" placeholder="e.g. SBIN0001234" maxlength="11" oninput="this.value = this.value.toUpperCase();" required />
+                    <input asp-for="IFSCCode" id="ifscInput" class="form-control font-monospace text-uppercase" placeholder="e.g. SBIN0001234" value="SBIN0001234" maxlength="11" oninput="this.value = this.value.toUpperCase();" required />
                     <span asp-validation-for="IFSCCode" class="text-danger small mt-1 d-block"></span>
                 </div>
                 <div class="col-12 col-sm-6">
@@ -108,23 +160,23 @@
 
             <!-- Set as Primary -->
             <div class="mb-4 form-check">
-                <input asp-for="SetAsPrimary" class="form-check-input" id="setAsPrimaryCheck" />
+                <input asp-for="SetAsPrimary" class="form-check-input" id="setAsPrimaryCheck" checked />
                 <label class="form-check-label small text-secondary" for="setAsPrimaryCheck">
-                    Set as primary account for future disbursements
+                    Set as primary account for instant home loan credit
                 </label>
             </div>
 
             <!-- Security Assurance -->
             <div class="p-3 bg-light rounded-3 border mb-3 small text-muted" style="font-size: 0.74rem;">
-                <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                Newly added accounts start in <strong>Pending</strong> status and undergo automated or operational penny-drop validation before disbursement eligibility.
+                <i class="fa-solid fa-circle-check text-success me-1"></i>
+                <strong>College Project Demo Mode:</strong> Bank account format is validated according to official bank rules and instantly verified for loan application.
             </div>
 
             <!-- Actions -->
             <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
                 <a asp-action="BankAccounts" class="btn btn-sm btn-light border px-3 py-2">Cancel</a>
                 <button type="submit" class="bp-btn bp-btn-primary px-4 py-2 fs-6">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Bank Account
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Link Bank Account
                 </button>
             </div>
         </form>
@@ -134,6 +186,28 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        function pickBank(code, name, ifsc, digits, placeholder) {
+            document.querySelectorAll('#bankChipsContainer .bank-chip').forEach(el => {
+                el.classList.remove('active', 'btn-outline-primary');
+                el.classList.add('btn-outline-secondary');
+            });
+            event.currentTarget.classList.add('active', 'btn-outline-primary');
+            event.currentTarget.classList.remove('btn-outline-secondary');
+
+            document.getElementById('bankNameField').value = name;
+            document.getElementById('ifscInput').value = ifsc;
+            
+            const accInput = document.getElementById('accountNumberInput');
+            const confirmInput = document.getElementById('confirmAccountNumberInput');
+            accInput.placeholder = placeholder;
+            confirmInput.placeholder = `Confirm ${digits} digits`;
+            accInput.setAttribute('maxlength', digits);
+            confirmInput.setAttribute('maxlength', digits);
+
+            document.getElementById('bankGuidanceText').innerHTML = 
+                `<i class="fa-solid fa-circle-info me-1"></i> Selected: <strong>${name}</strong> — requires ${digits}-digit account number & IFSC starting with <code>${ifsc.substring(0, 5)}...</code>`;
+        }
+
         function toggleAccVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
             const icon = btn.querySelector('i');

@@ -4,14 +4,22 @@
     ViewData["Title"] = "Apply for a Loan";
     Layout = "_BorrowerLayout";
     var customer = ViewBag.Customer as FinGuard.Models.Customer;
-    bool hasActiveLoan = ViewBag.HasActiveLoan as bool? ?? false;
-    bool hasPendingLoan = ViewBag.HasPendingLoan as bool? ?? false;
+    var bankAccounts = ViewBag.BankAccounts as List<FinGuard.Models.BankAccount> ?? new List<FinGuard.Models.BankAccount>();
+    var bankEligibilities = ViewBag.BankEligibilities as List<FinGuard.Models.BankAccountEligibilityDto> ?? new List<FinGuard.Models.BankAccountEligibilityDto>();
+    var primaryBank = ViewBag.PrimaryBank as FinGuard.Models.BankAccount;
+    bool hasBank = ViewBag.HasBank as bool? ?? false;
+    bool hasEligibleBank = ViewBag.HasEligibleBank as bool? ?? false;
+    var kycRecord = ViewBag.KycRecord as FinGuard.Models.KycVerificationRecord;
+    bool isPanVerified = ViewBag.IsPanVerified as bool? ?? false;
+    bool isAadhaarVerified = ViewBag.IsAadhaarVerified as bool? ?? false;
+    bool isKycComplete = ViewBag.IsKycComplete as bool? ?? false;
+    bool canApply = ViewBag.CanApply as bool? ?? false;
 }
 
 <div class="bp-page-header">
     <div>
         <h1 class="bp-page-title">Microfinance Loan Application</h1>
-        <p class="bp-page-subtitle">Multi-step digital loan request. Subject to field officer appraisal and institutional terms.</p>
+        <p class="bp-page-subtitle">Multi-step digital loan request. Subject to institutional guidelines and eligibility underwriting.</p>
     </div>
     <div>
         <a asp-action="Dashboard" class="bp-btn bp-btn-secondary bp-btn-sm">
@@ -20,36 +28,24 @@
     </div>
 </div>
 
-@if (hasActiveLoan)
+@if (hasBank && !hasEligibleBank)
 {
     <div class="bp-card border-warning border-start border-4 p-4 mb-4">
         <div class="d-flex align-items-start gap-3">
             <div class="bp-kpi-icon warning" style="width: 44px; height: 44px; font-size: 1.25rem;">
-                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
             </div>
             <div>
-                <h2 class="fs-6 fw-bold text-dark mb-1">Active Loan in Progress</h2>
+                <h2 class="fs-6 fw-bold text-dark mb-1">Bank Account Ineligible for New Request</h2>
                 <p class="text-secondary small mb-2">
-                    Our responsible microfinance lending charter permits one active credit facility per borrower to prevent household over-indebtedness.
+                    All currently linked bank accounts have an active credit facility with less than 50% repayment completed or an application currently under review. Under FinGuard institutional rules, you may link another bank account to submit a new loan request immediately.
                 </p>
-                <a asp-action="Dashboard" class="bp-btn bp-btn-secondary bp-btn-sm">View Current Active Loan</a>
-            </div>
-        </div>
-    </div>
-}
-else if (hasPendingLoan)
-{
-    <div class="bp-card border-info border-start border-4 p-4 mb-4">
-        <div class="d-flex align-items-start gap-3">
-            <div class="bp-kpi-icon indigo" style="width: 44px; height: 44px; font-size: 1.25rem;">
-                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-            </div>
-            <div>
-                <h2 class="fs-6 fw-bold text-dark mb-1">Pending Application Under Review</h2>
-                <p class="text-secondary small mb-2">
-                    You already have a loan application in progress. You can track its field verification status from the applications screen.
-                </p>
-                <a asp-action="Applications" class="bp-btn bp-btn-secondary bp-btn-sm">Track Application Status</a>
+                <div class="d-flex gap-2 mt-2">
+                    <a asp-action="AddBankAccount" class="btn btn-sm btn-primary py-1 px-3">
+                        <i class="fa-solid fa-plus me-1"></i> Link Another Bank Account
+                    </a>
+                    <a asp-action="Applications" class="btn btn-sm btn-outline-secondary py-1 px-3">View Loan Requests</a>
+                </div>
             </div>
         </div>
     </div>
@@ -84,11 +80,12 @@ else
 
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-3 rounded-3 mb-4"></div>
 
-                    <!-- STEP 1: Applicant Information -->
-                    <div class="bp-wizard-pane" data-step-index="0">
+                    <!-- STEP 1: Applicant Information & Mandatory Prerequisites -->
+                    <div class="bp-wizard-pane" data-step-index="0" data-requires-prerequisites="true" data-can-proceed="@(canApply ? "true" : "false")">
                         <h2 class="fs-6 fw-bold text-dark mb-1">Step 1 — Applicant Profile & Identity Verification</h2>
-                        <p class="text-secondary small mb-4">Verify that your registered profile credentials match your official identity documents.</p>
+                        <p class="text-secondary small mb-4">Verify that your registered profile credentials, linked bank account, and KYC records are confirmed.</p>
 
+                        <!-- Personal Details Card -->
                         <div class="p-3 bg-light rounded-3 border mb-4">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -105,15 +102,140 @@ else
                                 </div>
                                 <div class="col-md-6">
                                     <div class="text-muted small">KYC Verification Status:</div>
-                                    <span class="bp-badge @(customer?.KycStatus == "Verified" ? "bp-badge-success" : "bp-badge-warning")">
-                                        <span class="bp-badge-dot"></span> @(customer?.KycStatus ?? "Pending")
+                                    <span class="bp-badge @(isKycComplete ? "bp-badge-success" : "bp-badge-warning")">
+                                        <span class="bp-badge-dot"></span> @(isKycComplete ? "Verified" : "Pending Verification")
                                     </span>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Mandatory Prerequisites Status Cards -->
+                        <h3 class="fs-6 fw-bold text-dark mb-2">
+                            <i class="fa-solid fa-clipboard-check text-indigo me-1"></i> Mandatory Prerequisites Checklist
+                        </h3>
+                        <p class="text-secondary small mb-3">Both an authentic bank account and full identity verification (PAN and Aadhaar) are strictly required prior to loan application.</p>
+
+                        <div class="row g-3 mb-4">
+                            <!-- 1. Bank Account Card -->
+                            <div class="col-md-4">
+                                <div class="p-3 rounded-3 border h-100 @(hasBank ? "bg-success-subtle border-success-subtle" : "bg-danger-subtle border-danger-subtle")">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge @(hasBank ? "bg-success text-white" : "bg-danger text-white") small">
+                                            <i class="fa-solid @(hasBank ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                            @(hasBank ? "Linked" : "Not Linked")
+                                        </span>
+                                        <i class="fa-solid fa-building-columns fs-5 @(hasBank ? "text-success" : "text-danger")"></i>
+                                    </div>
+                                    <div class="fw-bold text-dark small mb-1">Bank Account</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;">
+                                        @if (hasBank)
+                                        {
+                                            <span>@(primaryBank?.BankName) &bull; A/C @(primaryBank?.MaskedAccountNumber)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger fw-semibold">No bank account linked.</span>
+                                        }
+                                    </div>
+                                    @if (!hasBank)
+                                    {
+                                        <a asp-action="AddBankAccount" class="btn btn-sm btn-outline-danger w-100 mt-2 py-1" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-plus me-1"></i> Link Bank Account
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- 2. PAN Card Status -->
+                            <div class="col-md-4">
+                                <div class="p-3 rounded-3 border h-100 @(isPanVerified ? "bg-success-subtle border-success-subtle" : "bg-danger-subtle border-danger-subtle")">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge @(isPanVerified ? "bg-success text-white" : "bg-danger text-white") small">
+                                            <i class="fa-solid @(isPanVerified ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                            @(isPanVerified ? "Verified" : "Pending")
+                                        </span>
+                                        <i class="fa-solid fa-id-card fs-5 @(isPanVerified ? "text-success" : "text-danger")"></i>
+                                    </div>
+                                    <div class="fw-bold text-dark small mb-1">PAN Verification</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;">
+                                        @if (isPanVerified)
+                                        {
+                                            <span>PAN: @(kycRecord?.MaskedPan ?? "Verified on file")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger fw-semibold">PAN verification pending.</span>
+                                        }
+                                    </div>
+                                    @if (!isPanVerified)
+                                    {
+                                        <a asp-action="Kyc" class="btn btn-sm btn-outline-danger w-100 mt-2 py-1" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-shield-halved me-1"></i> Verify PAN
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- 3. Aadhaar Status -->
+                            <div class="col-md-4">
+                                <div class="p-3 rounded-3 border h-100 @(isAadhaarVerified ? "bg-success-subtle border-success-subtle" : "bg-danger-subtle border-danger-subtle")">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge @(isAadhaarVerified ? "bg-success text-white" : "bg-danger text-white") small">
+                                            <i class="fa-solid @(isAadhaarVerified ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                            @(isAadhaarVerified ? "Verified" : "Pending")
+                                        </span>
+                                        <i class="fa-solid fa-fingerprint fs-5 @(isAadhaarVerified ? "text-success" : "text-danger")"></i>
+                                    </div>
+                                    <div class="fw-bold text-dark small mb-1">Aadhaar Verification</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;">
+                                        @if (isAadhaarVerified)
+                                        {
+                                            <span>UIDAI: @(kycRecord?.MaskedAadhaar ?? "Verified on file")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger fw-semibold">Aadhaar verification pending.</span>
+                                        }
+                                    </div>
+                                    @if (!isAadhaarVerified)
+                                    {
+                                        <a asp-action="Kyc" class="btn btn-sm btn-outline-danger w-100 mt-2 py-1" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-fingerprint me-1"></i> Verify Aadhaar
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!canApply)
+                        {
+                            <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-3 p-3 rounded-3 mb-4">
+                                <i class="fa-solid fa-triangle-exclamation text-warning fs-5 mt-1 flex-shrink-0"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Action Required Prior to Applying for Credit</div>
+                                    <div class="small text-secondary mt-1">
+                                        To maintain lending compliance and prevent fraud, you cannot submit a loan application without linking an active bank account and completing PAN & Aadhaar identity verification.
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @if (!hasBank)
+                                        {
+                                            <a asp-action="AddBankAccount" class="btn btn-sm btn-primary py-1 px-3">
+                                                <i class="fa-solid fa-building-columns me-1"></i> Link Bank Account Now
+                                            </a>
+                                        }
+                                        @if (!isKycComplete)
+                                        {
+                                            <a asp-action="Kyc" class="btn btn-sm btn-primary py-1 px-3">
+                                                <i class="fa-solid fa-id-card me-1"></i> Complete KYC Verification
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
                         <div class="d-flex justify-content-end">
-                            <button type="button" class="bp-btn bp-btn-primary bp-btn-next-step">
+                            <button type="button" class="bp-btn bp-btn-primary bp-btn-next-step" id="btnContinueStep1">
                                 Continue to Capital Request <i class="fa-solid fa-arrow-right ms-1"></i>
                             </button>
                         </div>
@@ -122,17 +244,17 @@ else
                     <!-- STEP 2: Capital Request -->
                     <div class="bp-wizard-pane d-none" data-step-index="1">
                         <h2 class="fs-6 fw-bold text-dark mb-1">Step 2 — Loan Request & Repayment Terms</h2>
-                        <p class="text-secondary small mb-4">Select desired principal capital and repayment duration.</p>
+                        <p class="text-secondary small mb-4">Select desired principal capital, repayment duration, and disbursement bank account.</p>
 
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label asp-for="RequestedPrincipal" class="form-label small fw-semibold text-secondary">
                                     Requested Principal Amount (₹) *
                                 </label>
-                                <input asp-for="RequestedPrincipal" id="bpReqPrincipal" type="number" min="5000" max="200000" step="1000"
+                                <input asp-for="RequestedPrincipal" id="bpReqPrincipal" type="number" min="5000" max="1000000" step="1000"
                                        class="form-control form-control-lg num-tabular fw-bold text-dark" required />
                                 <span asp-validation-for="RequestedPrincipal" class="text-danger small mt-1 d-block"></span>
-                                <div class="form-text small text-muted">Eligible range: ₹5,000 to ₹200,000</div>
+                                <div class="form-text small text-muted">Eligible range: ₹5,000 to ₹10,00,000 (Maximum ₹10 Lakhs)</div>
                             </div>
 
                             <div class="col-md-6">
@@ -145,11 +267,18 @@ else
                                     <option value="18">18 Months</option>
                                     <option value="24">24 Months (2 Years)</option>
                                     <option value="36">36 Months (3 Years)</option>
+                                    <option value="48">48 Months (4 Years)</option>
+                                    <option value="60">60 Months (5 Years)</option>
+                                    <option value="72">72 Months (6 Years)</option>
+                                    <option value="84">84 Months (7 Years)</option>
+                                    <option value="96">96 Months (8 Years)</option>
+                                    <option value="108">108 Months (9 Years)</option>
+                                    <option value="120">120 Months (10 Years)</option>
                                 </select>
                                 <span asp-validation-for="TenureMonths" class="text-danger small mt-1 d-block"></span>
                             </div>
 
-                            <div class="col-12">
+                            <div class="col-md-6">
                                 <label asp-for="Purpose" class="form-label small fw-semibold text-secondary">Loan Purpose *</label>
                                 <select asp-for="Purpose" class="form-select" required>
                                     <option value="Small Business / Working Capital">Small Business / Working Capital</option>
@@ -158,6 +287,52 @@ else
                                     <option value="Home Improvement / Sanitation">Home Improvement / Sanitation</option>
                                     <option value="Education & Skill Training">Education & Skill Training</option>
                                 </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label asp-for="BankAccountId" class="form-label small fw-semibold text-secondary mb-0">Select Disbursement Bank Account *</label>
+                                    <a asp-action="AddBankAccount" class="small text-decoration-none text-indigo fw-semibold">
+                                        <i class="fa-solid fa-plus me-1"></i> Link Another Bank
+                                    </a>
+                                </div>
+                                <select asp-for="BankAccountId" id="bpReqBank" class="form-select" required>
+                                    @if (bankEligibilities.Any())
+                                    {
+                                        @foreach (var be in bankEligibilities)
+                                        {
+                                            var b = be.BankAccount;
+                                            if (be.IsEligible)
+                                            {
+                                                <option value="@b.Id" data-name="@b.BankName" data-acc="@b.MaskedAccountNumber" data-holder="@b.AccountHolderName" data-ifsc="@b.IFSCCode" selected="@(Model.BankAccountId == b.Id ? "selected" : null)">
+                                                    @b.BankName (@b.MaskedAccountNumber) &bull; @b.AccountHolderName (@b.AccountType)
+                                                </option>
+                                            }
+                                            else
+                                            {
+                                                var reasonText = be.IneligibilityReason?.Contains("under review") == true 
+                                                    ? "Application Under Review" 
+                                                    : "Ineligible (< 50% Repaid)";
+                                                <option value="@b.Id" disabled="disabled" class="text-muted bg-light" data-name="@b.BankName" data-acc="@b.MaskedAccountNumber" data-holder="@b.AccountHolderName" data-ifsc="@b.IFSCCode">
+                                                    @b.BankName (@b.MaskedAccountNumber) — @reasonText
+                                                </option>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="">No linked bank account</option>
+                                    }
+                                </select>
+                                <div class="form-text small text-muted">The sanctioned loan amount will be disbursed directly to this selected verified account upon approval.</div>
+                                @if (bankEligibilities.Any(b => !b.IsEligible))
+                                {
+                                    <div class="mt-2 p-2 rounded-2 bg-light border small text-muted" style="font-size: 0.74rem;">
+                                        <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                                        <strong>Account Policy:</strong> Existing facilities on a bank account require at least 50% repayment before taking another loan on that account. You may choose any eligible account or <a asp-action="AddBankAccount" class="fw-semibold text-decoration-none">link a new account</a>.
+                                    </div>
+                                }
+                                <span asp-validation-for="BankAccountId" class="text-danger small mt-1 d-block"></span>
                             </div>
                         </div>
 
@@ -209,7 +384,7 @@ else
                     <!-- STEP 4: Review & Submit -->
                     <div class="bp-wizard-pane d-none" data-step-index="3">
                         <h2 class="fs-6 fw-bold text-dark mb-1">Step 4 — Review & Affirmation</h2>
-                        <p class="text-secondary small mb-4">Verify your application terms prior to official field submission.</p>
+                        <p class="text-secondary small mb-4">Verify your application terms prior to official submission.</p>
 
                         <div class="p-3 bg-light rounded-3 border mb-4">
                             <div class="row g-3 small">
@@ -234,8 +409,8 @@ else
                                     <strong class="text-dark d-block">12.0% Fixed APR</strong>
                                 </div>
                                 <div class="col-sm-6">
-                                    <span class="text-secondary">Processing Protocol:</span>
-                                    <strong class="text-dark d-block">Field Appraisal Review</strong>
+                                    <span class="text-secondary">Disbursement Bank:</span>
+                                    <strong class="text-dark d-block" id="reviewBank">@(primaryBank != null ? $"{primaryBank.BankName} ({primaryBank.MaskedAccountNumber})" : "Verified Bank")</strong>
                                 </div>
                             </div>
                         </div>
@@ -259,7 +434,7 @@ else
                         <div class="d-flex justify-content-between">
                             <button type="button" class="bp-btn bp-btn-secondary bp-btn-prev-step">Back</button>
                             <button type="submit" class="bp-btn bp-btn-primary px-4" id="submitAppBtn">
-                                <i class="fa-solid fa-paper-plane me-1"></i> Submit Official Application
+                                <i class="fa-solid fa-paper-plane me-1"></i> Submit Loan Application
                             </button>
                         </div>
                     </div>
@@ -267,8 +442,80 @@ else
             </div>
         </div>
     </div>
+
+    <!-- Prerequisites Warning Modal -->
+    <div class="modal fade" id="prerequisitesModal" tabindex="-1" aria-labelledby="prerequisitesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg text-center p-4" style="border-radius: 20px;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 bg-danger-subtle text-danger"
+                     style="width: 58px; height: 58px; font-size: 1.6rem;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1" id="prerequisitesModalLabel">Prerequisites Required</h5>
+                <p class="text-secondary small mb-3">
+                    You cannot proceed with a loan application until you complete the required prerequisites:
+                </p>
+
+                <div class="text-start bg-light rounded-3 p-3 border mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid @(hasBank ? "fa-circle-check text-success" : "fa-circle-xmark text-danger")"></i>
+                        <span class="small @(hasBank ? "text-success fw-semibold" : "text-danger fw-bold")">
+                            Bank Account: @(hasBank ? "Linked" : "Not Linked")
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid @(isPanVerified ? "fa-circle-check text-success" : "fa-circle-xmark text-danger")"></i>
+                        <span class="small @(isPanVerified ? "text-success fw-semibold" : "text-danger fw-bold")">
+                            PAN Verification: @(isPanVerified ? "Verified" : "Pending")
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid @(isAadhaarVerified ? "fa-circle-check text-success" : "fa-circle-xmark text-danger")"></i>
+                        <span class="small @(isAadhaarVerified ? "text-success fw-semibold" : "text-danger fw-bold")">
+                            Aadhaar Verification: @(isAadhaarVerified ? "Verified" : "Pending")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                    @if (!hasBank)
+                    {
+                        <a asp-action="AddBankAccount" class="bp-btn bp-btn-primary w-100 py-2 fs-6">
+                            <i class="fa-solid fa-building-columns me-1"></i> Link Bank Account
+                        </a>
+                    }
+                    @if (!isKycComplete)
+                    {
+                        <a asp-action="Kyc" class="bp-btn bp-btn-primary w-100 py-2 fs-6">
+                            <i class="fa-solid fa-id-card me-1"></i> Complete KYC
+                        </a>
+                    }
+                    <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const bankSelect = document.getElementById('bpReqBank');
+            const reviewBank = document.getElementById('reviewBank');
+
+            if (bankSelect && reviewBank) {
+                const updateReviewBank = () => {
+                    const opt = bankSelect.options[bankSelect.selectedIndex];
+                    if (opt) {
+                        reviewBank.textContent = opt.text;
+                    }
+                };
+                bankSelect.addEventListener('change', updateReviewBank);
+                updateReviewBank();
+            }
+        });
+    </script>
 }

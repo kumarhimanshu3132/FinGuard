@@ -1,0 +1,736 @@
+@model IEnumerable<FinGuard.Models.Loan>
+
+@{
+    ViewData["Title"] = "Borrower Loan Requests";
+    var totalCount = ViewBag.TotalCount as int? ?? 0;
+    var pendingCount = ViewBag.PendingCount as int? ?? 0;
+    var approvedCount = ViewBag.ApprovedCount as int? ?? 0;
+    var closedCount = ViewBag.ClosedCount as int? ?? 0;
+    var rejectedCount = ViewBag.RejectedCount as int? ?? 0;
+    string currentFilter = ViewBag.CurrentFilter as string ?? "Pending";
+    var custMap = ViewBag.CustomerMap as Dictionary<int, FinGuard.Models.Customer> ?? new();
+    var bankMap = ViewBag.BankAccountMap as Dictionary<int, FinGuard.Models.BankAccount> ?? new();
+}
+
+<!-- Page Header -->
+<div class="fg-page-header">
+    <div class="fg-page-title-group">
+        <h1 class="fg-page-title">
+            <i class="fa-solid fa-clipboard-check text-secondary" style="font-size: 1.25rem;" aria-hidden="true"></i>
+            Borrower Loan Requests
+            <span class="fg-count-badge">@totalCount Total</span>
+        </h1>
+        <p class="fg-page-subtitle">Evaluate applicant credentials, audit KYC & bank particulars, and adjudicate loan approvals.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Index" class="fg-btn fg-btn-secondary fg-btn-sm">
+            <i class="fa-solid fa-file-invoice-dollar me-1"></i> Loan Directory
+        </a>
+    </div>
+</div>
+
+<!-- Standardized Flash Alerts -->
+@if (TempData["Success"] != null)
+{
+    <div class="fg-alert fg-alert-success mb-3" role="alert">
+        <i class="fa-solid fa-circle-check fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Success"]</div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="fg-alert fg-alert-danger mb-3" role="alert">
+        <i class="fa-solid fa-circle-exclamation fg-alert-icon" aria-hidden="true"></i>
+        <div class="fg-alert-content">@TempData["Error"]</div>
+    </div>
+}
+
+<!-- Summary KPI Cards -->
+<div class="row g-2 mb-4">
+    <div class="col">
+        <a asp-action="Requests" asp-route-status="Pending" class="text-decoration-none">
+            <div class="fg-card p-3 h-100 border-start border-4 border-warning shadow-sm @(currentFilter == "Pending" ? "bg-warning bg-opacity-10" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-secondary small fw-semibold">Pending Review</span>
+                    <span class="badge bg-warning text-dark rounded-pill px-2">Action Req</span>
+                </div>
+                <div class="fs-4 fw-bold text-dark num-tabular">@pendingCount</div>
+                <div class="text-muted small" style="font-size: 0.72rem;">Awaiting admin decision</div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-action="Requests" asp-route-status="Approved" class="text-decoration-none">
+            <div class="fg-card p-3 h-100 border-start border-4 border-success shadow-sm @(currentFilter == "Approved" ? "bg-success bg-opacity-10" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-secondary small fw-semibold">Active Loans</span>
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                </div>
+                <div class="fs-4 fw-bold text-dark num-tabular">@approvedCount</div>
+                <div class="text-muted small" style="font-size: 0.72rem;">Active ongoing facilities</div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-action="Requests" asp-route-status="Closed" class="text-decoration-none">
+            <div class="fg-card p-3 h-100 border-start border-4 border-secondary shadow-sm @(currentFilter == "Closed" ? "bg-secondary bg-opacity-10" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-secondary small fw-semibold">Closed & Settled</span>
+                    <i class="fa-solid fa-check-double text-secondary"></i>
+                </div>
+                <div class="fs-4 fw-bold text-dark num-tabular">@closedCount</div>
+                <div class="text-muted small" style="font-size: 0.72rem;">Repaid in full</div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-action="Requests" asp-route-status="Rejected" class="text-decoration-none">
+            <div class="fg-card p-3 h-100 border-start border-4 border-danger shadow-sm @(currentFilter == "Rejected" ? "bg-danger bg-opacity-10" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-secondary small fw-semibold">Declined / Rejected</span>
+                    <i class="fa-solid fa-circle-xmark text-danger"></i>
+                </div>
+                <div class="fs-4 fw-bold text-dark num-tabular">@rejectedCount</div>
+                <div class="text-muted small" style="font-size: 0.72rem;">With logged reasons</div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-action="Requests" asp-route-status="All" class="text-decoration-none">
+            <div class="fg-card p-3 h-100 border-start border-4 border-primary shadow-sm @(currentFilter == "All" ? "bg-primary bg-opacity-10" : "")">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-secondary small fw-semibold">All Applications</span>
+                    <i class="fa-solid fa-folder-open text-primary"></i>
+                </div>
+                <div class="fs-4 fw-bold text-dark num-tabular">@totalCount</div>
+                <div class="text-muted small" style="font-size: 0.72rem;">Complete queue</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Table Card with Search & Filter Tabs -->
+<div class="fg-card fg-card-flush shadow-sm">
+    <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter status">
+            <a asp-action="Requests" asp-route-status="Pending" class="btn @(currentFilter == "Pending" ? "btn-warning fw-bold text-dark" : "btn-outline-secondary")">
+                Pending Review (@pendingCount)
+            </a>
+            <a asp-action="Requests" asp-route-status="Approved" class="btn @(currentFilter == "Approved" ? "btn-success fw-bold text-white" : "btn-outline-secondary")">
+                Active (@approvedCount)
+            </a>
+            <a asp-action="Requests" asp-route-status="Closed" class="btn @(currentFilter == "Closed" ? "btn-secondary fw-bold text-white" : "btn-outline-secondary")">
+                Closed (@closedCount)
+            </a>
+            <a asp-action="Requests" asp-route-status="Rejected" class="btn @(currentFilter == "Rejected" ? "btn-danger fw-bold text-white" : "btn-outline-secondary")">
+                Rejected (@rejectedCount)
+            </a>
+            <a asp-action="Requests" asp-route-status="All" class="btn @(currentFilter == "All" ? "btn-primary fw-bold text-white" : "btn-outline-secondary")">
+                All (@totalCount)
+            </a>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="requestsSearch" class="form-control form-control-sm" placeholder="Search applicant, loan ID, bank..." style="max-width: 250px;" oninput="filterTableRows(this.value)" />
+        </div>
+    </div>
+
+    <div class="fg-table-responsive">
+        <table class="fg-table" id="requestsTable">
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 90px;">Req ID</th>
+                    <th scope="col">Applicant Credentials</th>
+                    <th scope="col">Selected Bank Account</th>
+                    <th scope="col" class="text-end">Capital & EMI</th>
+                    <th scope="col" class="text-center">KYC Audit</th>
+                    <th scope="col" class="text-center" style="width: 120px;">Status</th>
+                    <th scope="col" class="text-end" style="width: 220px;">Adjudication</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        var cust = custMap.ContainsKey(item.CustomerId) ? custMap[item.CustomerId] : null;
+                        var disb = item.Disbursements?.FirstOrDefault();
+                        var bank = disb != null && disb.BankAccountId > 0 && bankMap.ContainsKey(disb.BankAccountId)
+                            ? bankMap[disb.BankAccountId]
+                            : (cust?.BankAccounts?.FirstOrDefault(b => b.IsPrimary) ?? cust?.BankAccounts?.FirstOrDefault());
+
+                        var kyc = cust?.KycVerificationRecord;
+                        bool isAadhaarOk = kyc?.AadhaarStatus == "Verified" || !string.IsNullOrEmpty(cust?.EncryptedIdDocument);
+                        bool isPanOk = kyc?.PanStatus == "Verified" || !string.IsNullOrEmpty(cust?.EncryptedPan);
+                        bool isOtpOk = kyc?.OtpStatus == "Verified";
+                        bool isOverallKyc = cust?.KycStatus == "Verified";
+
+                        string searchIndex = $"{item.LoanId} {cust?.CustomerId} {cust?.Name} {cust?.Email} {cust?.Phone} {bank?.BankName} {bank?.MaskedAccountNumber} {item.Status}".ToLower();
+
+                        <tr class="request-item-row" data-search="@searchIndex">
+                            <td>
+                                <span class="fg-row-id fw-bold text-dark">#@item.LoanId</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                         style="width: 34px; height: 34px; background: #4f46e5; font-size: 0.85rem;">
+                                        @(cust?.Name?.Substring(0, 1).ToUpper() ?? "C")
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@(cust?.Name ?? "Customer #" + item.CustomerId)</div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">
+                                            <i class="fa-solid fa-phone me-1"></i>@(cust?.Phone ?? "—") &bull;
+                                            <i class="fa-solid fa-envelope me-1"></i>@(cust?.Email ?? "—")
+                                        </div>
+                                        <div class="text-secondary small mt-1" style="font-size: 0.7rem;">
+                                            Income: <strong class="text-dark">₹@(cust?.MonthlyIncome.ToString("N0") ?? "0")</strong>/mo &bull;
+                                            Address: @(cust?.Address ?? "—"), @(cust?.PinCode ?? "—")
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (bank != null)
+                                {
+                                    <div class="small">
+                                        <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                            <i class="fa-solid fa-building-columns text-primary"></i>
+                                            @bank.BankName
+                                        </div>
+                                        <div class="text-secondary font-monospace" style="font-size: 0.75rem;">
+                                            @bank.MaskedAccountNumber
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">
+                                            Holder: <strong>@bank.AccountHolderName</strong> &bull; IFSC: @bank.IFSCCode
+                                        </div>
+                                        <span class="badge @(bank.VerificationStatus == "Verified" ? "bg-success-subtle text-success border border-success-subtle" : "bg-warning-subtle text-warning border border-warning-subtle") mt-1" style="font-size: 0.65rem;">
+                                            @bank.VerificationStatus
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-danger small fw-semibold">
+                                        <i class="fa-solid fa-circle-exclamation me-1"></i> No Bank Selected
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="fs-6 fw-bold text-dark num-tabular">₹@item.PrincipalAmount.ToString("N2")</div>
+                                <div class="text-indigo fw-semibold num-tabular small">EMI: ₹@item.EMIAmount.ToString("N2")/mo</div>
+                                <div class="text-muted small" style="font-size: 0.7rem;">@item.TenureMonths Months &bull; 12% APR</div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column align-items-center gap-1">
+                                    <span class="badge @(isOverallKyc ? "bg-success text-white" : "bg-warning text-dark")" style="font-size: 0.7rem;">
+                                        <i class="fa-solid @(isOverallKyc ? "fa-shield-check" : "fa-shield-halved") me-1"></i>
+                                        @(isOverallKyc ? "KYC Complete" : "KYC Pending")
+                                    </span>
+                                    <div class="d-flex gap-1" style="font-size: 0.65rem;">
+                                        <span class="badge @(isAadhaarOk ? "bg-success-subtle text-success" : "bg-light text-muted border")" title="@(kyc?.MaskedAadhaar ?? "Aadhaar")">
+                                            Aadhaar: @(isAadhaarOk ? "✓" : "✗")
+                                        </span>
+                                        <span class="badge @(isPanOk ? "bg-success-subtle text-success" : "bg-light text-muted border")" title="@(kyc?.MaskedPan ?? "PAN")">
+                                            PAN: @(isPanOk ? "✓" : "✗")
+                                        </span>
+                                        <span class="badge @(isOtpOk ? "bg-success-subtle text-success" : "bg-light text-muted border")">
+                                            OTP: @(isOtpOk ? "✓" : "✗")
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (item.Status == "Pending")
+                                {
+                                    <span class="fg-badge fg-badge-warning">
+                                        <span class="fg-badge-dot"></span> In Review
+                                    </span>
+                                }
+                                else if (item.Status == "Closed" || item.RemainingBalance <= 0)
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 small">
+                                        <i class="fa-solid fa-check-double text-success me-1"></i> Closed
+                                    </span>
+                                    <div class="text-success small mt-1" style="font-size: 0.68rem;">
+                                        Fully Repaid
+                                    </div>
+                                }
+                                else if (item.Status == "Active" || item.Status == "Approved")
+                                {
+                                    <span class="fg-badge fg-badge-success">
+                                        <span class="fg-badge-dot"></span> Accepted
+                                    </span>
+                                    <div class="text-success small mt-1" style="font-size: 0.68rem;">
+                                        <i class="fa-solid fa-money-bill-transfer me-1"></i> Disbursed
+                                    </div>
+                                }
+                                else if (item.Status == "Rejected")
+                                {
+                                    <span class="fg-badge fg-badge-danger">
+                                        <span class="fg-badge-dot"></span> Rejected
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(disb?.Remarks))
+                                    {
+                                        <div class="text-danger small mt-1 text-truncate" style="font-size: 0.68rem; max-width: 130px;" title="@disb.Remarks">
+                                            @disb.Remarks
+                                        </div>
+                                    }
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-end">
+                                    <!-- View Full Details Trigger -->
+                                    <button type="button" class="btn btn-sm btn-light border py-1 px-2 text-secondary"
+                                            title="View Full Applicant Details & Audit"
+                                            onclick='openRequestModal(@item.LoanId, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+                                                loanId = item.LoanId,
+                                                principal = item.PrincipalAmount,
+                                                tenure = item.TenureMonths,
+                                                emi = item.EMIAmount,
+                                                status = (item.Status == "Closed" || item.RemainingBalance <= 0) ? "Closed" : item.Status,
+                                                disbStatus = item.DisbursementStatus,
+                                                applicantName = cust?.Name ?? "Customer #" + item.CustomerId,
+                                                customerId = cust?.CustomerId ?? item.CustomerId,
+                                                email = cust?.Email ?? "—",
+                                                phone = cust?.Phone ?? "—",
+                                                address = cust?.Address ?? "—",
+                                                pinCode = cust?.PinCode ?? "—",
+                                                income = cust?.MonthlyIncome ?? 0,
+                                                dob = cust?.DateOfBirth.ToString("dd MMM yyyy") ?? "—",
+                                                kycStatus = cust?.KycStatus ?? "Pending",
+                                                maskedAadhaar = kyc?.MaskedAadhaar ?? "Not verified",
+                                                aadhaarRef = kyc?.AadhaarTransactionRef ?? "—",
+                                                maskedPan = kyc?.MaskedPan ?? "Not verified",
+                                                panHolder = kyc?.PanHolderName ?? cust?.Name ?? "—",
+                                                panRef = kyc?.PanTransactionRef ?? "—",
+                                                bankName = bank?.BankName ?? "Not Linked",
+                                                accountHolder = bank?.AccountHolderName ?? cust?.Name ?? "—",
+                                                maskedAcc = bank?.MaskedAccountNumber ?? "—",
+                                                ifsc = bank?.IFSCCode ?? "—",
+                                                accType = bank?.AccountType ?? "Savings",
+                                                bankVerified = bank?.VerificationStatus ?? "Pending",
+                                                rejectionReason = disb?.Remarks ?? ""
+                                            })))'>
+                                        <i class="fa-solid fa-id-card-clip text-primary me-1"></i> Details
+                                    </button>
+
+                                    @if (item.Status == "Closed" || item.RemainingBalance <= 0)
+                                    {
+                                        <span class="badge bg-light text-muted border px-2 py-1 small">
+                                            <i class="fa-solid fa-lock me-1"></i> Facility Settled
+                                        </span>
+                                    }
+                                    else if (item.Status == "Pending")
+                                    {
+                                        <!-- Direct Accept Button -->
+                                        <form asp-action="Approve" asp-route-id="@item.LoanId" asp-route-returnUrl="Requests" method="post" class="m-0 p-0"
+                                              onsubmit="return confirm('Accept & Disburse: Are you sure you want to approve Loan Request #@item.LoanId for ₹@item.PrincipalAmount.ToString("N0")? The loan amount will be disbursed to @(bank?.BankName ?? "the customer account").');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold" title="Accept & Disburse to Selected Bank">
+                                                <i class="fa-solid fa-check me-1"></i> Accept
+                                            </button>
+                                        </form>
+
+                                        <!-- Reject Modal Trigger -->
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 fw-semibold"
+                                                title="Reject Loan Application"
+                                                onclick="openRejectModal(@item.LoanId, '@(cust?.Name ?? "Customer")')">
+                                            <i class="fa-solid fa-xmark me-1"></i> Reject
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            <div class="fg-empty-state">
+                                <div class="fg-empty-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                                <h3 class="fg-empty-title">No Loan Requests in this Queue</h3>
+                                <p class="fg-empty-desc">There are currently no customer applications matching the selected filter state.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 1: FULL APPLICANT & AUDIT DETAILS MODAL
+     ======================================================== -->
+<div class="modal fade" id="requestDetailModal" tabindex="-1" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom py-3 bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="requestDetailModalLabel">
+                        Loan Request Appraisal & Verification Audit
+                    </h5>
+                    <div class="text-muted small" id="mLoanIdSubtitle">Application #APP-0000</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Genuineness Checklist Box -->
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <h6 class="fw-bold text-dark small mb-2 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-indigo"></i> Regulatory Underwriting & Genuineness Checklist
+                    </h6>
+                    <div class="row g-2 small" id="mChecklist">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Column 1: Applicant Profile -->
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100">
+                            <h6 class="fw-bold text-dark small mb-3 border-bottom pb-2">
+                                <i class="fa-solid fa-user me-1 text-primary"></i> 1. Applicant Profile & Income
+                            </h6>
+                            <table class="table table-sm table-borderless small mb-0">
+                                <tr>
+                                    <td class="text-secondary" style="width: 130px;">Full Legal Name:</td>
+                                    <td class="fw-bold text-dark" id="mApplicantName">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Borrower ID:</td>
+                                    <td class="fw-semibold text-dark" id="mCustomerId">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Mobile Phone:</td>
+                                    <td class="text-dark" id="mPhone">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Email Address:</td>
+                                    <td class="text-dark" id="mEmail">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Date of Birth:</td>
+                                    <td class="text-dark" id="mDob">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Declared Income:</td>
+                                    <td class="fw-bold text-success fs-6 num-tabular" id="mIncome">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Residential Address:</td>
+                                    <td class="text-dark" id="mAddress">—</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: KYC & Identity Records -->
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100">
+                            <h6 class="fw-bold text-dark small mb-3 border-bottom pb-2">
+                                <i class="fa-solid fa-id-card-clip me-1 text-primary"></i> 2. KYC Regulatory Verification
+                            </h6>
+                            <table class="table table-sm table-borderless small mb-0">
+                                <tr>
+                                    <td class="text-secondary" style="width: 130px;">Overall KYC:</td>
+                                    <td id="mKycStatus">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Aadhaar (UIDAI):</td>
+                                    <td class="fw-bold text-dark" id="mAadhaar">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Aadhaar Txn Ref:</td>
+                                    <td class="font-monospace text-muted" style="font-size: 0.72rem;" id="mAadhaarRef">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">PAN (NSDL):</td>
+                                    <td class="fw-bold text-dark" id="mPan">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">PAN Holder Name:</td>
+                                    <td class="text-dark fw-semibold" id="mPanHolder">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">PAN Txn Ref:</td>
+                                    <td class="font-monospace text-muted" style="font-size: 0.72rem;" id="mPanRef">—</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Column 3: Selected Disbursement Bank Account -->
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-dark small mb-3 border-bottom pb-2">
+                                <i class="fa-solid fa-building-columns me-1 text-primary"></i> 3. Selected Disbursement Bank Account
+                            </h6>
+                            <table class="table table-sm table-borderless small mb-0">
+                                <tr>
+                                    <td class="text-secondary" style="width: 130px;">Bank Name:</td>
+                                    <td class="fw-bold text-dark" id="mBankName">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Account Number:</td>
+                                    <td class="font-monospace fw-bold text-dark" id="mBankAcc">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Account Holder:</td>
+                                    <td class="text-dark" id="mBankHolder">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">IFSC Code:</td>
+                                    <td class="font-monospace text-dark" id="mBankIfsc">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Account Type:</td>
+                                    <td class="text-dark" id="mBankType">Savings</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Status:</td>
+                                    <td id="mBankStatus">—</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Column 4: Loan Terms -->
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-dark small mb-3 border-bottom pb-2">
+                                <i class="fa-solid fa-hand-holding-dollar me-1 text-primary"></i> 4. Capital & Repayment Terms
+                            </h6>
+                            <table class="table table-sm table-borderless small mb-0">
+                                <tr>
+                                    <td class="text-secondary" style="width: 130px;">Principal Amount:</td>
+                                    <td class="fw-bold text-indigo fs-5 num-tabular" id="mPrincipal">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Tenure:</td>
+                                    <td class="fw-semibold text-dark" id="mTenure">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Interest Rate:</td>
+                                    <td class="text-dark">12.0% Fixed APR</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Calculated EMI:</td>
+                                    <td class="fw-bold text-dark fs-6 num-tabular" id="mEmi">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Total Repayable:</td>
+                                    <td class="fw-semibold text-dark num-tabular" id="mTotal">₹0.00</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mRejectionBox" class="alert alert-danger mt-3 small d-none">
+                    <strong>Rejection Reason:</strong> <span id="mRejectionReason"></span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top py-2 d-flex justify-content-between">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="d-flex gap-2" id="mActionButtons">
+                    <!-- Populated by JS for Pending state -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 2: FORMAL REJECTION REASON MODAL
+     ======================================================== -->
+<div class="modal fade" id="rejectReasonModal" tabindex="-1" aria-labelledby="rejectReasonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <form asp-action="Reject" asp-route-returnUrl="Requests" method="post" id="rejectForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="rejectLoanId" value="0" />
+
+                <div class="modal-header border-bottom py-3">
+                    <h5 class="modal-title fw-bold text-danger mb-0" id="rejectReasonModalLabel">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Decline Loan Application
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <p class="text-secondary small mb-3">
+                        You are declining Loan Request <strong id="rejectLoanIdText">#APP-0000</strong> for <strong id="rejectApplicantText">Applicant</strong>.
+                        Please provide a clear formal reason that will be displayed on the borrower's portal.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Pre-defined Reason</label>
+                        <select class="form-select form-select-sm" id="presetReasonSelect" onchange="applyPresetReason(this)">
+                            <option value="">-- Select standard compliance reason --</option>
+                            <option value="Income and debt-to-income ratio does not meet microfinance repayment capacity standards.">Debt-to-income affordability shortfall</option>
+                            <option value="Demographic mismatch between provided Aadhaar/PAN records and application declarations.">Demographic data mismatch</option>
+                            <option value="Destination bank account could not be confirmed as belonging to the registered applicant.">Bank account name discrepancy</option>
+                            <option value="Applicant has incomplete identity verification or submitted invalid documentation.">Incomplete KYC / Regulatory compliance</option>
+                            <option value="Existing active debt commitment detected in credit assessment.">Active loan policy restriction</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Rejection Reason for Borrower <span class="text-danger">*</span></label>
+                        <textarea name="reason" id="rejectReasonTextarea" class="form-control form-control-sm" rows="3" required placeholder="Enter the exact reason explaining why this application was rejected..."></textarea>
+                        <div class="form-text small text-muted">This explanation will be visible on the customer's portal under their Loan Requests page.</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-2 d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold px-3">
+                        <i class="fa-solid fa-xmark me-1"></i> Confirm Rejection
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterTableRows(query) {
+            const q = query.toLowerCase().trim();
+            const rows = document.querySelectorAll('.request-item-row');
+            rows.forEach(r => {
+                const search = r.getAttribute('data-search') || '';
+                r.style.display = search.includes(q) ? '' : 'none';
+            });
+        }
+
+        function openRejectModal(loanId, applicantName) {
+            document.getElementById('rejectLoanId').value = loanId;
+            document.getElementById('rejectLoanIdText').textContent = '#APP-' + loanId;
+            document.getElementById('rejectApplicantText').textContent = applicantName;
+            document.getElementById('rejectReasonTextarea').value = '';
+            document.getElementById('presetReasonSelect').selectedIndex = 0;
+
+            const modal = new bootstrap.Modal(document.getElementById('rejectReasonModal'));
+            modal.show();
+        }
+
+        function applyPresetReason(select) {
+            if (select.value) {
+                document.getElementById('rejectReasonTextarea').value = select.value;
+            }
+        }
+
+        function openRequestModal(loanId, data) {
+            document.getElementById('mLoanIdSubtitle').textContent = `Application #APP-${loanId} &bull; Customer #${data.customerId}`;
+            document.getElementById('mApplicantName').textContent = data.applicantName;
+            document.getElementById('mCustomerId').textContent = '#' + data.customerId;
+            document.getElementById('mPhone').textContent = data.phone;
+            document.getElementById('mEmail').textContent = data.email;
+            document.getElementById('mDob').textContent = data.dob;
+            document.getElementById('mIncome').textContent = '₹' + Number(data.income).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            document.getElementById('mAddress').textContent = `${data.address}, PIN: ${data.pinCode}`;
+
+            document.getElementById('mKycStatus').innerHTML = data.kycStatus === 'Verified'
+                ? '<span class="badge bg-success">Verified</span>'
+                : '<span class="badge bg-warning text-dark">Pending</span>';
+
+            document.getElementById('mAadhaar').textContent = data.maskedAadhaar;
+            document.getElementById('mAadhaarRef').textContent = data.aadhaarRef;
+            document.getElementById('mPan').textContent = data.maskedPan;
+            document.getElementById('mPanHolder').textContent = data.panHolder;
+            document.getElementById('mPanRef').textContent = data.panRef;
+
+            document.getElementById('mBankName').textContent = data.bankName;
+            document.getElementById('mBankAcc').textContent = data.maskedAcc;
+            document.getElementById('mBankHolder').textContent = data.accountHolder;
+            document.getElementById('mBankIfsc').textContent = data.ifsc;
+            document.getElementById('mBankType').textContent = data.accType;
+            document.getElementById('mBankStatus').innerHTML = data.bankVerified === 'Verified'
+                ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Verified</span>'
+                : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span>';
+
+            document.getElementById('mPrincipal').textContent = '₹' + Number(data.principal).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            document.getElementById('mTenure').textContent = data.tenure + ' Months';
+            document.getElementById('mEmi').textContent = '₹' + Number(data.emi).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            const totalRepay = Number(data.emi) * Number(data.tenure);
+            document.getElementById('mTotal').textContent = '₹' + totalRepay.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+            // Genuineness Checklist
+            const isKycOk = data.kycStatus === 'Verified';
+            const isBankOk = data.bankName !== 'Not Linked';
+            const emiRatio = data.income > 0 ? (Number(data.emi) / Number(data.income)) * 100 : 0;
+            const isAffordable = emiRatio <= 50;
+
+            const checklistHtml = `
+                <div class="col-sm-6 d-flex align-items-center gap-2">
+                    <i class="fa-solid ${isKycOk ? 'fa-circle-check text-success' : 'fa-circle-xmark text-danger'}"></i>
+                    <span>Aadhaar & PAN Self-Verified: <strong>${isKycOk ? 'Confirmed' : 'Pending'}</strong></span>
+                </div>
+                <div class="col-sm-6 d-flex align-items-center gap-2">
+                    <i class="fa-solid ${isBankOk ? 'fa-circle-check text-success' : 'fa-circle-xmark text-danger'}"></i>
+                    <span>Bank Linked in Borrower Name: <strong>${isBankOk ? 'Confirmed' : 'Missing'}</strong></span>
+                </div>
+                <div class="col-sm-6 d-flex align-items-center gap-2">
+                    <i class="fa-solid ${isAffordable ? 'fa-circle-check text-success' : 'fa-triangle-exclamation text-warning'}"></i>
+                    <span>Affordability (EMI ${emiRatio.toFixed(1)}% of income): <strong>${isAffordable ? 'Eligible' : 'High Debt Ratio'}</strong></span>
+                </div>
+                <div class="col-sm-6 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span>Credit Line Eligibility: <strong>Microfinance Tier 1</strong></span>
+                </div>
+            `;
+            document.getElementById('mChecklist').innerHTML = checklistHtml;
+
+            // Rejection reason if rejected
+            const rejBox = document.getElementById('mRejectionBox');
+            if (data.status === 'Rejected' && data.rejectionReason) {
+                rejBox.classList.remove('d-none');
+                document.getElementById('mRejectionReason').textContent = data.rejectionReason;
+            } else {
+                rejBox.classList.add('d-none');
+            }
+
+            // Action Buttons
+            const btnContainer = document.getElementById('mActionButtons');
+            if (data.status === 'Pending') {
+                btnContainer.innerHTML = `
+                    <form action="/Loan/Approve?id=${loanId}&returnUrl=Requests" method="post" class="d-inline"
+                          onsubmit="return confirm('Accept & Disburse: Are you sure you want to approve Loan Request #${loanId}?');">
+                        <input type="hidden" name="__RequestVerificationToken" value="${getCsrfToken()}" />
+                        <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                            <i class="fa-solid fa-check me-1"></i> Accept & Disburse Loan
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('requestDetailModal')).hide(); openRejectModal(${loanId}, '${data.applicantName.replace(/'/g, "\\'")}');">
+                        <i class="fa-solid fa-xmark me-1"></i> Reject Request
+                    </button>
+                `;
+            } else {
+                btnContainer.innerHTML = `
+                    <span class="badge ${data.status === 'Approved' || data.status === 'Active' ? 'bg-success' : 'bg-danger'} px-3 py-2 small">
+                        ${data.status}
+                    </span>
+                `;
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('requestDetailModal'));
+            modal.show();
+        }
+
+        function getCsrfToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+    </script>
+}

@@ -21,8 +21,8 @@ namespace FinGuard.Models
 
     public class BorrowerRegisterViewModel
     {
-        [Required(ErrorMessage = "Please enter your legal full name.")]
-        [RegularExpression(@"^[a-zA-Z]+( [a-zA-Z]+)*$", ErrorMessage = "Name can only contain letters and a single space between words.")]
+        [Required(ErrorMessage = "Please enter your full legal name.")]
+        [RegularExpression(@"^[a-zA-Z\s\.\'-]{2,70}$", ErrorMessage = "Please enter a valid legal name.")]
         public string Name { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please enter your email address.")]
@@ -30,10 +30,10 @@ namespace FinGuard.Models
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please enter your 10-digit mobile number.")]
-        [RegularExpression(@"^[6789]\d{9}$", ErrorMessage = "Phone number must be exactly 10 digits and start with 6, 7, 8, or 9.")]
+        [RegularExpression(@"^[6789]\d{9}$", ErrorMessage = "Please enter a valid 10-digit mobile number.")]
         public string Phone { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please enter a secure password.")]
+        [Required(ErrorMessage = "Please create a secure password.")]
         [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
@@ -43,18 +43,18 @@ namespace FinGuard.Models
         [DataType(DataType.Password)]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please provide your Date of Birth.")]
+        [Required(ErrorMessage = "Please enter your date of birth.")]
         public DateTime DateOfBirth { get; set; }
 
         [Required(ErrorMessage = "Please enter your estimated monthly income.")]
         [Range(1000, 10000000, ErrorMessage = "Monthly income must be at least ₹1,000.")]
-        public decimal MonthlyIncome { get; set; }
+        public decimal? MonthlyIncome { get; set; }
 
         [Required(ErrorMessage = "Please enter your residential address.")]
         public string Address { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please enter your 6-digit PIN code.")]
-        [RegularExpression(@"^\d{6}$", ErrorMessage = "Please enter a valid 6-digit PIN code.")]
+        [Required(ErrorMessage = "Please enter your 6-digit postal PIN code.")]
+        [RegularExpression(@"^[1-9]\d{5}$", ErrorMessage = "Please enter a valid 6-digit postal PIN code.")]
         public string PinCode { get; set; } = string.Empty;
     }
 
@@ -76,6 +76,7 @@ namespace FinGuard.Models
         public List<Loan> ActiveLoans { get; set; } = new();
         public List<Loan> PendingApplications { get; set; } = new();
         public List<Loan> ClosedLoans { get; set; } = new();
+        public List<Loan> AllLoans { get; set; } = new();
         public List<Repayment> RecentRepayments { get; set; } = new();
 
         public decimal TotalSanctionedPrincipal { get; set; }
@@ -91,6 +92,14 @@ namespace FinGuard.Models
         public Loan? PrimaryLoan { get; set; }
         public decimal ForeclosureAmount { get; set; }
         public decimal ForeclosureSavings { get; set; }
+
+        // College Project Workflow Elements
+        public List<BankAccount> BankAccounts { get; set; } = new();
+        public KycVerificationRecord? KycRecord { get; set; }
+        public BankAccount? PrimaryBankAccount => BankAccounts.FirstOrDefault(b => b.IsPrimary) ?? BankAccounts.FirstOrDefault();
+        public bool HasVerifiedBank => BankAccounts.Any(b => b.VerificationStatus == "Verified");
+        public bool HasVerifiedPan => KycRecord?.PanStatus == KycStageStatus.Verified || !string.IsNullOrEmpty(Customer.EncryptedPan);
+        public bool HasVerifiedAadhaar => KycRecord?.AadhaarStatus == KycStageStatus.Verified || !string.IsNullOrEmpty(Customer.EncryptedIdDocument);
     }
 
     public class LoanDetailsViewModel
@@ -109,19 +118,21 @@ namespace FinGuard.Models
     public class LoanApplicationViewModel
     {
         [Required(ErrorMessage = "Please specify the requested principal amount.")]
-        [Range(5000, 200000, ErrorMessage = "Microfinance loan requests must be between ₹5,000 and ₹200,000.")]
-        public decimal RequestedPrincipal { get; set; } = 30000;
+        [Range(5000, 1000000, ErrorMessage = "Loan requests must be between ₹5,000 and ₹10,00,000 (Maximum ₹10 Lakhs).")]
+        public decimal RequestedPrincipal { get; set; } = 50000;
 
         [Required(ErrorMessage = "Please choose a repayment tenure.")]
-        [Range(3, 36, ErrorMessage = "Tenure must be between 3 and 36 months.")]
+        [Range(3, 120, ErrorMessage = "Repayment tenure must be between 3 and 120 months (up to 10 years).")]
         public int TenureMonths { get; set; } = 12;
 
         [Required(ErrorMessage = "Please state the loan purpose.")]
-        public string Purpose { get; set; } = "Small Business / Working Capital";
+        public string Purpose { get; set; } = "Education / Business Development";
 
         [Required(ErrorMessage = "Please confirm your current monthly household income.")]
-        [Range(1000, 1000000, ErrorMessage = "Please enter a valid monthly income.")]
+        [Range(1000, 10000000, ErrorMessage = "Please enter a valid monthly income.")]
         public decimal MonthlyHouseholdIncome { get; set; }
+
+        public int? BankAccountId { get; set; }
 
         public bool AgreeTerms { get; set; }
     }
@@ -262,5 +273,48 @@ namespace FinGuard.Models
         public bool IsSimulated { get; set; } = true;
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? CompletedAtUtc { get; set; }
+    }
+
+    public class SetNewPasswordViewModel
+    {
+        [Required(ErrorMessage = "Please enter your registered email address.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please enter your new permanent password.")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
+        [DataType(DataType.Password)]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your new password.")]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
+        [DataType(DataType.Password)]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class BankAccountEligibilityDto
+    {
+        public BankAccount BankAccount { get; set; } = null!;
+        public bool IsEligible { get; set; } = true;
+        public string? IneligibilityReason { get; set; }
+        public int? ActiveLoanId { get; set; }
+        public decimal ActiveLoanPrincipal { get; set; }
+        public decimal RepaidAmount { get; set; }
+        public decimal RequiredRepayment { get; set; }
+        public decimal RepaymentPercentage { get; set; }
+    }
+
+    public class PayEmiViewModel
+    {
+        public int LoanId { get; set; }
+        public Loan Loan { get; set; } = null!;
+        public Customer Customer { get; set; } = null!;
+        public decimal EMIAmount { get; set; }
+        public decimal RemainingBalance { get; set; }
+        public decimal ForeclosureAmount { get; set; }
+        public decimal ForeclosureSavings { get; set; }
+        public DateTime NextDueDate { get; set; }
+        public int PaidInstallmentsCount { get; set; }
+        public int TotalInstallmentsCount { get; set; }
     }
 }

@@ -43,9 +43,9 @@
             </div>
 
             <div class="bp-sidebar-content">
-                <!-- Core Banking Navigation -->
+                <!-- Digital Lending Navigation -->
                 <div>
-                    <div class="bp-sidebar-section-title">Core Banking</div>
+                    <div class="bp-sidebar-section-title">Navigation</div>
                     <ul class="bp-sidebar-nav">
                         <li>
                             <a class="bp-sidebar-link @(currentAction == "Dashboard" ? "active" : "")"
@@ -63,10 +63,10 @@
                             </a>
                         </li>
                         <li>
-                            <a class="bp-sidebar-link @(currentAction == "Applications" ? "active" : "")"
+                            <a class="bp-sidebar-link @(currentAction == "Applications" || currentAction == "LoanRequests" ? "active" : "")"
                                asp-controller="Portal" asp-action="Applications">
-                                <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-                                <span>Applications</span>
+                                <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+                                <span>Loan Requests</span>
                             </a>
                         </li>
                         <li>
@@ -77,6 +77,20 @@
                             </a>
                         </li>
                         <li>
+                            <a class="bp-sidebar-link @(currentAction == "PayEmi" ? "active" : "")"
+                               asp-controller="Portal" asp-action="PayEmi">
+                                <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+                                <span>Pay EMI</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="bp-sidebar-link @(currentAction == "Repayments" || currentAction == "Receipt" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Repayments">
+                                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                                <span>Repayment History</span>
+                            </a>
+                        </li>
+                        <li>
                             <a class="bp-sidebar-link @(currentAction == "BankAccounts" || currentAction == "AddBankAccount" || currentAction == "EditBankAccount" ? "active" : "")"
                                asp-controller="Portal" asp-action="BankAccounts">
                                 <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
@@ -84,45 +98,17 @@
                             </a>
                         </li>
                         <li>
-                            <a class="bp-sidebar-link @(currentAction == "Disbursements" || currentAction == "DisburseLoan" || currentAction == "DisbursementReceipt" ? "active" : "")"
-                               asp-controller="Portal" asp-action="Disbursements">
-                                <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i>
-                                <span>Disbursements</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Operations & Service -->
-                <div>
-                    <div class="bp-sidebar-section-title">Collections & Status</div>
-                    <ul class="bp-sidebar-nav">
-                        <li>
-                            <a class="bp-sidebar-link @(currentAction == "Schedule" ? "active" : "")"
-                               asp-controller="Portal" asp-action="Schedule">
-                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <span>EMI Schedule</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a class="bp-sidebar-link @(currentAction == "Repayments" || currentAction == "Receipt" ? "active" : "")"
-                               asp-controller="Portal" asp-action="Repayments">
-                                <i class="fa-solid fa-receipt" aria-hidden="true"></i>
-                                <span>Repayments</span>
-                            </a>
-                        </li>
-                        <li>
                             <a class="bp-sidebar-link @(currentAction == "Kyc" ? "active" : "")"
                                asp-controller="Portal" asp-action="Kyc">
                                 <i class="fa-solid fa-id-card-clip" aria-hidden="true"></i>
-                                <span>KYC Status</span>
+                                <span>KYC & Identity</span>
                             </a>
                         </li>
                         <li>
-                            <a class="bp-sidebar-link @(currentAction == "Support" ? "active" : "")"
-                               asp-controller="Portal" asp-action="Support">
-                                <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
-                                <span>Help & Support</span>
+                            <a class="bp-sidebar-link @(currentAction == "Profile" ? "active" : "")"
+                               asp-controller="Portal" asp-action="Profile">
+                                <i class="fa-solid fa-user-gear" aria-hidden="true"></i>
+                                <span>My Profile</span>
                             </a>
                         </li>
                     </ul>
@@ -142,10 +128,6 @@
                 </div>
 
                 <div class="d-flex flex-column gap-1">
-                    <a asp-controller="Portal" asp-action="Profile" class="bp-sidebar-action-btn">
-                        <i class="fa-solid fa-user-gear"></i>
-                        <span>My Profile</span>
-                    </a>
                     <form asp-controller="BorrowerAuth" asp-action="Logout" method="post" class="m-0 p-0">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="bp-sidebar-action-btn danger">
@@ -162,37 +144,28 @@
 
         <!-- Main Content Area -->
         <div class="bp-content-wrapper">
-            <!-- Mobile-First Sticky Top App Bar (mPokket style - Phones only) -->
+            <!-- Mobile-First Sticky Top App Bar -->
             <header class="bp-m-header d-lg-none no-print">
+                <button class="bp-m-icon-btn border-0" id="bpSidebarToggleBtn" type="button" aria-label="Toggle navigation menu">
+                    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                </button>
                 <a asp-controller="Portal" asp-action="Profile" class="bp-m-avatar" title="View Profile">
                     @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "₹")
                 </a>
-                <div class="bp-m-greeting">Welcome @(User.Identity?.Name?.Split(' ').FirstOrDefault() ?? User.Identity?.Name)!</div>
-                <a asp-controller="Portal" asp-action="Notifications" class="bp-m-icon-btn" title="Notifications">
-                    <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-                    <span class="bp-m-badge-dot"></span>
-                </a>
+                <div class="bp-m-greeting text-truncate">Welcome @(User.Identity?.Name?.Split(' ').FirstOrDefault() ?? User.Identity?.Name)!</div>
             </header>
 
-            <!-- Desktop Sleek Top Header Bar (Laptops/Desktops only) -->
+            <!-- Desktop Sleek Top Header Bar -->
             <header class="bp-topbar d-none d-lg-flex no-print">
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small fw-medium">
-                            <i class="fa-solid fa-lock text-success me-1"></i> Institutional Microfinance Portal
+                        <span class="badge bg-light text-primary border px-2 py-1 rounded-pill small fw-medium">
+                            <i class="fa-solid fa-graduation-cap text-primary me-1"></i> FinGuard Digital Lending Portal
                         </span>
                     </div>
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
-                    <a asp-controller="Portal" asp-action="Notifications" class="btn btn-sm text-secondary p-2 position-relative"
-                       title="Notifications">
-                        <i class="fa-solid fa-bell fa-lg"></i>
-                        <span class="position-absolute top-1 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                            <span class="visually-hidden">New alerts</span>
-                        </span>
-                    </a>
-
                     <a asp-controller="Portal" asp-action="Apply" class="bp-btn bp-btn-primary bp-btn-sm">
                         <i class="fa-solid fa-plus me-1"></i> Apply for Loan
                     </a>
@@ -208,8 +181,8 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="bpTopMenu" style="border-radius: 10px;">
                             <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Profile"><i class="fa-solid fa-user me-2 text-muted"></i>Profile</a></li>
                             <li><a class="dropdown-item small" asp-controller="Portal" asp-action="BankAccounts"><i class="fa-solid fa-building-columns me-2 text-muted"></i>Bank Accounts</a></li>
-                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Disbursements"><i class="fa-solid fa-money-bill-transfer me-2 text-muted"></i>Disbursements</a></li>
-                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Applications"><i class="fa-solid fa-list-check me-2 text-muted"></i>Applications</a></li>
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="Loans"><i class="fa-solid fa-file-invoice me-2 text-muted"></i>My Loans</a></li>
+                            <li><a class="dropdown-item small" asp-controller="Portal" asp-action="PayEmi"><i class="fa-solid fa-credit-card me-2 text-muted"></i>Pay EMI</a></li>
                             <li><hr class="dropdown-divider my-1"></li>
                             <li>
                                 <form asp-controller="BorrowerAuth" asp-action="Logout" method="post" class="m-0 p-0">
@@ -227,46 +200,39 @@
                 @RenderBody()
             </main>
 
-            <!-- Desktop Footer (Hidden on mobile to prioritize bottom nav) -->
-            <footer class="py-4 border-top bg-white mt-auto d-none d-lg-block no-print">
+            <!-- Desktop Footer -->
+            <footer class="py-3 border-top bg-white mt-auto d-none d-lg-block no-print">
                 <div class="container-fluid px-4">
                     <div class="row align-items-center g-3">
                         <div class="col-md-6 text-center text-md-start">
                             <span class="fw-bold text-dark me-2">FinGuard</span>
-                            <span class="text-secondary small">&copy; 2026 Microfinance Digital Lending Portal. All rights reserved.</span>
-                        </div>
-                        <div class="col-md-6 text-center text-md-end">
-                            <div class="d-inline-flex gap-3 small">
-                                <a asp-controller="Portal" asp-action="Support" class="text-secondary text-decoration-none">Customer Support</a>
-                                <a asp-controller="Portal" asp-action="PaymentStatus" class="text-secondary text-decoration-none">Center Repayments</a>
-                                <a asp-controller="Home" asp-action="Privacy" class="text-secondary text-decoration-none">Privacy & Terms</a>
-                            </div>
+                            <span class="text-secondary small">&copy; 2026 Digital Lending Portal. Home-Based Loan Management System.</span>
                         </div>
                     </div>
                 </div>
             </footer>
 
-            <!-- Mobile Safe-Area Fixed 5-Destination Bottom Navigation (Phones Only) -->
+            <!-- Mobile Safe-Area Fixed Bottom Navigation (Phones Only) -->
             <nav class="bp-bottom-navbar d-lg-none no-print" aria-label="Mobile Navigation">
                 <a asp-controller="Portal" asp-action="Dashboard" class="bp-bnav-item @(currentAction == "Dashboard" ? "active" : "")">
                     <i class="fa-solid fa-house" aria-hidden="true"></i>
                     <span>Home</span>
                 </a>
+                <a asp-controller="Portal" asp-action="Apply" class="bp-bnav-item @(currentAction == "Apply" ? "active" : "")">
+                    <i class="fa-solid fa-plus-circle" aria-hidden="true"></i>
+                    <span>Apply</span>
+                </a>
                 <a asp-controller="Portal" asp-action="Loans" class="bp-bnav-item @(currentAction == "Loans" || currentAction == "LoanDetails" ? "active" : "")">
                     <i class="fa-solid fa-wallet" aria-hidden="true"></i>
                     <span>Loans</span>
                 </a>
-                <a asp-controller="Portal" asp-action="Repayments" class="bp-bnav-item @(currentAction == "Repayments" || currentAction == "Schedule" || currentAction == "Receipt" ? "active" : "")">
-                    <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-                    <span>Payments</span>
+                <a asp-controller="Portal" asp-action="BankAccounts" class="bp-bnav-item @(currentAction == "BankAccounts" ? "active" : "")">
+                    <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
+                    <span>Banks</span>
                 </a>
-                <a asp-controller="Portal" asp-action="Notifications" class="bp-bnav-item @(currentAction == "Notifications" ? "active" : "")" aria-label="Notifications">
-                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
-                    <span>Notifications</span>
-                </a>
-                <a asp-controller="Portal" asp-action="Profile" class="bp-bnav-item @(currentAction == "Profile" || currentAction == "Kyc" ? "active" : "")">
-                    <i class="fa-solid fa-user" aria-hidden="true"></i>
-                    <span>Profile</span>
+                <a asp-controller="Portal" asp-action="Kyc" class="bp-bnav-item @(currentAction == "Kyc" ? "active" : "")">
+                    <i class="fa-solid fa-id-card-clip" aria-hidden="true"></i>
+                    <span>KYC</span>
                 </a>
             </nav>
         </div>
@@ -284,14 +250,29 @@
                     <span class="bp-brand-badge">Portal</span>
                 </a>
 
-                <div class="d-flex align-items-center gap-3 ms-auto">
+                <div class="d-flex align-items-center gap-2 ms-auto">
                     @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
                     {
                         <a asp-controller="Home" asp-action="Index" class="bp-btn bp-btn-primary bp-btn-sm">
-                            <i class="fa-solid fa-gauge" aria-hidden="true"></i> Admin Console
+                            <i class="fa-solid fa-gauge" aria-hidden="true"></i> <span class="d-none d-sm-inline">Admin Console</span>
                         </a>
                         <a asp-controller="Auth" asp-action="Logout" class="bp-btn bp-btn-outline bp-btn-sm">
-                            <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                            <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> <span class="d-none d-sm-inline">Sign Out</span>
+                        </a>
+                    }
+                    else if (User.Identity?.IsAuthenticated == true && User.IsInRole("Borrower"))
+                    {
+                        <a asp-controller="Portal" asp-action="Dashboard" class="bp-btn bp-btn-primary bp-btn-sm">
+                            <i class="fa-solid fa-house" aria-hidden="true"></i> <span class="d-none d-sm-inline">Dashboard</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="BorrowerAuth" asp-action="Login" class="bp-btn bp-btn-outline bp-btn-sm">
+                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Sign In
+                        </a>
+                        <a asp-controller="BorrowerAuth" asp-action="Register" class="bp-btn bp-btn-primary bp-btn-sm d-none d-sm-inline-flex">
+                            <i class="fa-solid fa-user-plus me-1"></i> Register
                         </a>
                     }
                 </div>
